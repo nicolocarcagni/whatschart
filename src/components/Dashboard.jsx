@@ -49,11 +49,11 @@ export default function Dashboard({ messages, onBack }) {
         <div>
           <div className="flex items-center gap-2 font-mono text-xs text-zinc-400 uppercase tracking-wider mb-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>ANALISI DELLA CHAT</span>
+            <span>CHAT ANALYSIS</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Panoramica Statistiche</h2>
+          <h2 className="text-3xl font-extrabold text-white tracking-tight">Statistics Overview</h2>
           <p className="text-zinc-400 text-sm font-mono mt-1">
-            <span className="text-emerald-400 font-semibold">{stats.totalMessages.toLocaleString()}</span> messaggi in <span className="text-white font-semibold">{stats.totalDays.toLocaleString()}</span> giorni attivi
+            <span className="text-emerald-400 font-semibold">{stats.totalMessages.toLocaleString('en-US')}</span> messages across <span className="text-white font-semibold">{stats.totalDays.toLocaleString('en-US')}</span> active days
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export default function Dashboard({ messages, onBack }) {
           className="bg-zinc-950 hover:bg-zinc-900 text-zinc-300 hover:text-white px-5 py-2.5 rounded-xl transition-all border border-zinc-800 hover:border-zinc-700 font-mono text-xs flex items-center gap-2 cursor-pointer shadow-sm group"
         >
           <RotateCcw className="w-3.5 h-3.5 text-zinc-500 group-hover:text-emerald-400 transition-colors" />
-          <span>Carica un altro file</span>
+          <span>Upload another file</span>
         </button>
       </div>
 
@@ -71,22 +71,22 @@ export default function Dashboard({ messages, onBack }) {
         {/* Total Messages */}
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Totale Messaggi</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Total Messages</span>
             <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg">
               <MessageSquare className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalMessages.toLocaleString()}</p>
+          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalMessages.toLocaleString('en-US')}</p>
           <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-            <span>Messaggi registrati</span>
+            <span>Messages logged</span>
           </p>
         </div>
         
         {/* Participants */}
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Partecipanti</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Participants</span>
             <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
               <Users className="w-4 h-4" />
             </div>
@@ -94,40 +94,40 @@ export default function Dashboard({ messages, onBack }) {
           <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalParticipants}</p>
           <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span>Persone nella chat</span>
+            <span>People in chat</span>
           </p>
         </div>
 
         {/* Active Days */}
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Giorni Attivi</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Active Days</span>
             <div className="p-2 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg">
               <Calendar className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalDays.toLocaleString()}</p>
+          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalDays.toLocaleString('en-US')}</p>
           <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
-            <span>Giorni con messaggi</span>
+            <span>Days with messages</span>
           </p>
         </div>
 
         {/* Daily Cadence */}
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Media Giornaliera</span>
+            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Daily Average</span>
             <div className="p-2 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-lg">
               <TrendingUp className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.averageMessagesPerDay.toLocaleString()}</p>
-            <span className="font-mono text-xs text-zinc-500">msg/giorno</span>
+            <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.averageMessagesPerDay.toLocaleString('en-US')}</p>
+            <span className="font-mono text-xs text-zinc-500">msg/day</span>
           </div>
           <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-            <span>Media messaggi al giorno</span>
+            <span>Average messages per day</span>
           </p>
         </div>
       </div>
@@ -138,20 +138,20 @@ export default function Dashboard({ messages, onBack }) {
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-amber-500/40 transition-all">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-400/90 font-medium">Record in un Giorno</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-400/90 font-medium">Single-Day Record</span>
               <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg">
                 <Trophy className="w-4 h-4" />
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-2xl font-bold font-mono text-white">{stats.recordDay.count.toLocaleString()}</p>
-              <span className="font-mono text-xs text-zinc-400">messaggi</span>
+              <p className="text-2xl font-bold font-mono text-white">{stats.recordDay.count.toLocaleString('en-US')}</p>
+              <span className="font-mono text-xs text-zinc-400">messages</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Data del record:</span>
+            <span className="text-[11px] font-mono text-zinc-500">Record date:</span>
             <span className="font-mono text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
-              {stats.recordDay.date || 'N/D'}
+              {stats.recordDay.date || 'N/A'}
             </span>
           </div>
         </div>
@@ -160,22 +160,22 @@ export default function Dashboard({ messages, onBack }) {
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90 font-medium">Serie Consecutiva più Lunga</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90 font-medium">Longest Streak</span>
               <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
                 <Flame className="w-4 h-4" />
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-1">
               <p className="text-2xl font-bold font-mono text-white">{stats.longestStreak.count}</p>
-              <span className="font-mono text-xs text-zinc-400">{stats.longestStreak.count === 1 ? 'giorno' : 'giorni consecutivi'}</span>
+              <span className="font-mono text-xs text-zinc-400">{stats.longestStreak.count === 1 ? 'day' : 'consecutive days'}</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Periodo:</span>
+            <span className="text-[11px] font-mono text-zinc-500">Period:</span>
             <span className="font-mono text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
               {stats.longestStreak.startDate && stats.longestStreak.endDate
                 ? `${stats.longestStreak.startDate} → ${stats.longestStreak.endDate}`
-                : 'Sessione singola'}
+                : 'Single day'}
             </span>
           </div>
         </div>
@@ -184,22 +184,22 @@ export default function Dashboard({ messages, onBack }) {
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-indigo-400/90 font-medium">Pausa più Lunga</span>
+              <span className="font-mono text-[11px] uppercase tracking-wider text-indigo-400/90 font-medium">Longest Silence</span>
               <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg">
                 <Clock className="w-4 h-4" />
               </div>
             </div>
             <div className="flex items-baseline gap-2 mt-1">
               <p className="text-2xl font-bold font-mono text-white">{stats.maxInactivityGap.days}</p>
-              <span className="font-mono text-xs text-zinc-400">{stats.maxInactivityGap.days === 1 ? 'giorno' : 'giorni senza messaggi'}</span>
+              <span className="font-mono text-xs text-zinc-400">{stats.maxInactivityGap.days === 1 ? 'day' : 'days of inactivity'}</span>
             </div>
           </div>
           <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Intervallo:</span>
+            <span className="text-[11px] font-mono text-zinc-500">Interval:</span>
             <span className="font-mono text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">
               {stats.maxInactivityGap.fromDate && stats.maxInactivityGap.toDate
                 ? `${stats.maxInactivityGap.fromDate} → ${stats.maxInactivityGap.toDate}`
-                : 'Nessuna pausa'}
+                : 'No pause'}
             </span>
           </div>
         </div>
@@ -213,12 +213,12 @@ export default function Dashboard({ messages, onBack }) {
               <Clock3 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Attività per Fascia Oraria</h3>
-              <p className="text-xs font-mono text-zinc-500">Distribuzione dei messaggi nelle 24 ore della giornata</p>
+              <h3 className="text-lg font-bold text-white tracking-tight">Hourly Activity</h3>
+              <p className="text-xs font-mono text-zinc-500">Message distribution across the 24 hours of the day</p>
             </div>
           </div>
           <span className="font-mono text-[11px] text-zinc-400 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900">
-            24 ORE
+            24 HOURS
           </span>
         </div>
 
@@ -236,27 +236,27 @@ export default function Dashboard({ messages, onBack }) {
                 dataKey="hour" 
                 stroke="#71717a" 
                 fontSize={11} 
-                fontFamily="var(--font-mono)"
+                fontFamily="var(--font-mono)" 
                 tickLine={false} 
                 axisLine={false} 
               />
               <YAxis 
                 stroke="#71717a" 
                 fontSize={11} 
-                fontFamily="var(--font-mono)"
+                fontFamily="var(--font-mono)" 
                 tickLine={false} 
                 axisLine={false} 
               />
-              <RechartsTooltip content={<DarkTooltip formatter={(value) => [`${value.toLocaleString()} messaggi`, 'Messaggi']} />} />
+              <RechartsTooltip content={<DarkTooltip formatter={(value) => [`${value.toLocaleString('en-US')} messages`, 'Messages']} />} />
               <Area 
                 type="monotone" 
                 dataKey="count" 
-                name="Messaggi" 
+                name="Messages" 
                 stroke="#10b981" 
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#cyberAreaGradient)" 
-              />
+              />     />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -272,8 +272,8 @@ export default function Dashboard({ messages, onBack }) {
                 <Type className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Parole Più Usate</h3>
-                <p className="text-xs font-mono text-zinc-500">Le 10 parole più ripetute (escluse congiunzioni e parole comuni)</p>
+                <h3 className="text-lg font-bold text-white tracking-tight">Top Words</h3>
+                <p className="text-xs font-mono text-zinc-500">Top 10 repeated words (excluding conjunctions and common words)</p>
               </div>
             </div>
             <span className="font-mono text-[11px] text-cyan-400 border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 rounded">
@@ -305,12 +305,12 @@ export default function Dashboard({ messages, onBack }) {
                   </div>
 
                   <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-md shadow-inner">
-                    {item.count.toLocaleString()}
+                    {item.count.toLocaleString('en-US')}
                   </span>
                 </div>
               );
             }) : (
-              <div className="text-center font-mono text-xs text-zinc-600 py-12">Nessuna parola trovata nella chat.</div>
+              <div className="text-center font-mono text-xs text-zinc-600 py-12">No words found in the chat.</div>
             )}
           </div>
         </div>
@@ -323,8 +323,8 @@ export default function Dashboard({ messages, onBack }) {
                 <Smile className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Emoji Più Usate</h3>
-                <p className="text-xs font-mono text-zinc-500">Le 10 emoji più frequenti nella conversazione</p>
+                <h3 className="text-lg font-bold text-white tracking-tight">Top Emojis</h3>
+                <p className="text-xs font-mono text-zinc-500">Top 10 frequent emojis in the conversation</p>
               </div>
             </div>
             <span className="font-mono text-[11px] text-pink-400 border border-pink-500/20 bg-pink-500/5 px-2 py-0.5 rounded">
@@ -360,12 +360,12 @@ export default function Dashboard({ messages, onBack }) {
                   </div>
 
                   <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-md shadow-inner">
-                    {item.count.toLocaleString()}
+                    {item.count.toLocaleString('en-US')}
                   </span>
                 </div>
               );
             }) : (
-              <div className="text-center font-mono text-xs text-zinc-600 py-12">Nessuna emoji rilevata nella chat.</div>
+              <div className="text-center font-mono text-xs text-zinc-600 py-12">No emojis detected in the chat.</div>
             )}
           </div>
         </div>
@@ -377,13 +377,13 @@ export default function Dashboard({ messages, onBack }) {
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Messaggi per Partecipante</h3>
+              <h3 className="text-lg font-bold text-white tracking-tight">Messages by Participant</h3>
               <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
-                Percentuale e quota di messaggi inviati da ciascun utente
+                Percentage and share of messages sent by each participant
               </p>
             </div>
             <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">
-              QUOTE
+              SHARE
             </span>
           </div>
 
@@ -394,9 +394,9 @@ export default function Dashboard({ messages, onBack }) {
         <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Media Condivisi per Partecipante</h3>
+              <h3 className="text-lg font-bold text-white tracking-tight">Media Shared by Participant</h3>
               <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
-                Immagini, video, messaggi vocali e sticker inviati
+                Images, videos, voice notes, and stickers sent
               </p>
             </div>
             <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">

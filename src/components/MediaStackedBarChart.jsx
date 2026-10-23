@@ -17,10 +17,10 @@ import {
  * and completely segregated from the participant entity palette.
  */
 const MEDIA_CONFIG = [
-  { key: 'Image', name: 'Immagini', color: '#38bdf8' }, // Sky Blue / Neon Cyan
-  { key: 'Video', name: 'Video', color: '#f43f5e' },    // Vivid Coral / Rose
-  { key: 'Audio', name: 'Audio', color: '#10b981' },    // Emerald (WhatsApp voice notes)
-  { key: 'Sticker', name: 'Sticker', color: '#a855f7' }  // Neon Purple
+  { key: 'Image', name: 'Images', color: '#38bdf8' }, // Sky Blue / Neon Cyan
+  { key: 'Video', name: 'Videos', color: '#f43f5e' },  // Vivid Coral / Rose
+  { key: 'Audio', name: 'Audio', color: '#10b981' },   // Emerald (WhatsApp voice notes)
+  { key: 'Sticker', name: 'Stickers', color: '#a855f7' } // Neon Purple
 ];
 
 /**
@@ -68,7 +68,7 @@ function CustomBarTotalLabel(props) {
       fontFamily="var(--font-mono)"
       fontWeight={600}
     >
-      {value.toLocaleString('it-IT')}
+      {value.toLocaleString('en-US')}
     </text>
   );
 }
@@ -82,7 +82,7 @@ function MediaCustomTooltip({ active, payload, label }) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;
-  const participantName = label || data.name || 'Partecipante';
+  const participantName = label || data.name || 'Participant';
   const total = (data.Image || 0) + (data.Video || 0) + (data.Audio || 0) + (data.Sticker || 0);
 
   return (
@@ -93,9 +93,9 @@ function MediaCustomTooltip({ active, payload, label }) {
           {participantName}
         </p>
         <div className="text-zinc-400 text-[11px] mt-1 flex items-center justify-between">
-          <span>Totale media inviati:</span>
+          <span>Total media sent:</span>
           <span className="text-white font-bold bg-zinc-900 border border-zinc-800/80 px-1.5 py-0.5 rounded text-xs shadow-xs">
-            {total.toLocaleString('it-IT')}
+            {total.toLocaleString('en-US')}
           </span>
         </div>
       </div>
@@ -122,7 +122,7 @@ function MediaCustomTooltip({ active, payload, label }) {
                 <span className="text-zinc-300 font-medium">{category.name}</span>
               </div>
               <div className="flex items-center gap-1.5 font-medium">
-                <span className="text-white font-semibold">{count.toLocaleString('it-IT')}</span>
+                <span className="text-white font-semibold">{count.toLocaleString('en-US')}</span>
                 <span className="text-zinc-500 text-[10px]">({percent}%)</span>
               </div>
             </div>
@@ -136,7 +136,7 @@ function MediaCustomTooltip({ active, payload, label }) {
 /**
  * Custom Legend Renderer to guarantee visual synchronization:
  * Items are read in the exact order the stack grows from bottom to top:
- * Immagini (base) -> Video -> Audio -> Sticker (top).
+ * Images (base) -> Videos -> Audio -> Stickers (top).
  */
 function CustomMediaLegend() {
   return (
@@ -206,20 +206,20 @@ export default function MediaStackedBarChart({ data = [] }) {
             content={<CustomMediaLegend />}
           />
 
-          {/* Stack segment 1: Immagini (base of stack, square corners) */}
+          {/* Stack segment 1: Images (base of stack, square corners) */}
           <Bar
             dataKey="Image"
-            name="Immagini"
+            name="Images"
             stackId="mediaStack"
             fill="#38bdf8"
             radius={[0, 0, 0, 0]}
             isAnimationActive={true}
           />
 
-          {/* Stack segment 2: Video (intermediate, square corners) */}
+          {/* Stack segment 2: Videos (intermediate, square corners) */}
           <Bar
             dataKey="Video"
-            name="Video"
+            name="Videos"
             stackId="mediaStack"
             fill="#f43f5e"
             radius={[0, 0, 0, 0]}
@@ -236,10 +236,10 @@ export default function MediaStackedBarChart({ data = [] }) {
             isAnimationActive={true}
           />
 
-          {/* Stack segment 4: Sticker (top of stack, rounded top corners & aggregate label) */}
+          {/* Stack segment 4: Stickers (top of stack, rounded top corners & aggregate label) */}
           <Bar
             dataKey="Sticker"
-            name="Sticker"
+            name="Stickers"
             stackId="mediaStack"
             fill="#a855f7"
             radius={[6, 6, 0, 0]}

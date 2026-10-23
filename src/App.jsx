@@ -23,24 +23,24 @@ function App() {
             const text = e.target.result;
             const parsed = parseWhatsAppChat(text);
             if (parsed.length === 0) {
-              setError("Nessun messaggio valido trovato. Assicurati che sia un export corretto di WhatsApp.");
+              setError("No valid messages found. Please ensure this is a valid WhatsApp chat export.");
             } else {
               setMessages(parsed);
             }
           } catch {
-            setError("Impossibile leggere il file. Verifica che il file di testo sia integro.");
+            setError("Unable to read the file. Please verify that the text file is intact.");
           } finally {
             setIsLoading(false);
           }
         }, 60);
       };
       reader.onerror = () => {
-        setError("Errore nella lettura del file. Riprova.");
+        setError("Error reading file. Please try again.");
         setIsLoading(false);
       };
       reader.readAsText(file);
     } else {
-      setError("Formato non supportato. Carica il file _chat.txt esportato da WhatsApp.");
+      setError("Unsupported format. Please upload the _chat.txt file exported from WhatsApp.");
     }
   };
 
@@ -105,11 +105,11 @@ function App() {
             <div className="text-center space-y-2">
               <div className="inline-flex items-center gap-2 font-mono text-xs text-emerald-400 uppercase tracking-widest px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>LETTURA DEL FILE</span>
+                <span>READING FILE</span>
               </div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">Analisi della chat in corso...</h2>
+              <h2 className="text-2xl font-bold text-white tracking-tight">Analyzing chat...</h2>
               <p className="text-zinc-500 text-sm max-w-sm mx-auto font-mono">
-                Calcolo dei messaggi e delle statistiche direttamente sul tuo dispositivo.
+                Computing messages and statistics directly on your device.
               </p>
             </div>
           </div>
@@ -119,7 +119,7 @@ function App() {
             <div className="text-center mb-10 space-y-4">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-zinc-800 bg-zinc-950/80 backdrop-blur-md shadow-inner text-xs font-mono text-zinc-300">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-zinc-400">Privacy:</span> 100% nel tuo browser
+                <span className="text-zinc-400">Privacy:</span> 100% in your browser
               </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
@@ -129,7 +129,7 @@ function App() {
               </h1>
 
               <p className="text-zinc-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed">
-                Visualizza record di messaggi, giorni consecutivi, pause, parole ed emoji più frequenti e attività per partecipante. Nessun dato lascia il tuo dispositivo.
+                Visualize message records, streaks, pauses, top words and emojis, and activity per participant. No data leaves your device.
               </p>
             </div>
 
@@ -147,7 +147,7 @@ function App() {
             {/* Dropzone */}
             <div
               role="region"
-              aria-label="Area di caricamento file. Trascina qui l'export della chat o usa il pulsante di selezione."
+              aria-label="File upload area. Drag and drop the chat export here or use the select button."
               className={`relative rounded-3xl p-8 md:p-14 flex flex-col items-center justify-center transition-all duration-300 border backdrop-blur-xl group overflow-hidden ${
                 isDragging
                   ? 'border-emerald-400 bg-emerald-950/20 shadow-[0_0_50px_rgba(16,185,129,0.2)] scale-[1.01]'
@@ -168,17 +168,17 @@ function App() {
               </div>
 
               <h2 className="text-xl md:text-2xl font-bold mb-2 text-center text-white tracking-tight">
-                Trascina qui il file <span className="font-mono text-emerald-400">_chat.txt</span>
+                Drag and drop the <span className="font-mono text-emerald-400">_chat.txt</span> file here
               </h2>
               <p className="text-zinc-400 mb-8 text-center max-w-md text-sm">
-                Esporta qualsiasi chat WhatsApp (selezionando "Senza file multimediali") e rilascia il file qui per analizzarlo.
+                Export any WhatsApp chat (selecting "Without Media") and drop the file here to analyze it.
               </p>
 
               <label
                 htmlFor="chat-file-input"
                 className="cursor-pointer bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-black font-semibold font-mono text-sm px-8 py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.2)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] flex items-center gap-2 tracking-tight"
               >
-                <span>Seleziona file _chat.txt</span>
+                <span>Select _chat.txt file</span>
                 <ArrowRight className="w-4 h-4 text-black" />
               </label>
               <input
@@ -186,7 +186,7 @@ function App() {
                 type="file"
                 className="sr-only"
                 accept=".txt"
-                aria-label="Carica file di testo esportato da WhatsApp"
+                aria-label="Upload text file exported from WhatsApp"
                 onChange={onFileChange}
               />
             </div>
@@ -196,24 +196,24 @@ function App() {
               <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/50 flex items-start gap-3">
                 <Cpu className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-white uppercase">Nel tuo browser</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">I messaggi rimangono solo nella memoria del tuo dispositivo.</p>
+                  <p className="text-xs font-semibold text-white uppercase">In your browser</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Messages stay strictly in your device's memory.</p>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/50 flex items-start gap-3">
                 <ShieldCheck className="w-4 h-4 text-cyan-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-white uppercase">Nessun server</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Nessun database, nessun account né condivisione a terzi.</p>
+                  <p className="text-xs font-semibold text-white uppercase">No servers</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">No database, no accounts, and no third-party sharing.</p>
                 </div>
               </div>
 
               <div className="p-4 rounded-xl border border-zinc-900 bg-zinc-950/50 flex items-start gap-3">
                 <BarChart3 className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
                 <div>
-                  <p className="text-xs font-semibold text-white uppercase">Dati completi</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">Grafici orari, record di messaggi, parole ed emoji più frequenti.</p>
+                  <p className="text-xs font-semibold text-white uppercase">Comprehensive Insights</p>
+                  <p className="text-[11px] text-zinc-500 mt-0.5">Hourly charts, message records, top words, and emojis.</p>
                 </div>
               </div>
             </div>

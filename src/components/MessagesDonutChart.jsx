@@ -62,11 +62,11 @@ function DonutCustomTooltip({ active, payload, totalMessages }) {
         <span className="text-white font-bold text-sm truncate max-w-[160px]">{name}</span>
       </div>
       <div className="flex items-center justify-between gap-4 pt-0.5">
-        <span className="text-zinc-400">Messaggi:</span>
-        <span className="text-white font-bold">{count.toLocaleString('it-IT')}</span>
+        <span className="text-zinc-400">Messages:</span>
+        <span className="text-white font-bold">{count.toLocaleString('en-US')}</span>
       </div>
       <div className="flex items-center justify-between gap-4">
-        <span className="text-zinc-400">Quota:</span>
+        <span className="text-zinc-400">Share:</span>
         <span className="text-emerald-400 font-bold">{percent}%</span>
       </div>
     </div>
@@ -75,7 +75,7 @@ function DonutCustomTooltip({ active, payload, totalMessages }) {
 
 /**
  * Custom Legend Renderer displaying username, percentage and absolute volume
- * formatted in standard Italian (e.g. "nico: 52% (2.506)").
+ * formatted in standard layout (e.g. "nico: 52% (2,506)").
  */
 function CustomDonutLegend({ payload, totalMessages }) {
   if (!payload || !payload.length) return null;
@@ -99,7 +99,7 @@ function CustomDonutLegend({ payload, totalMessages }) {
             />
             <span className="text-zinc-300 font-medium">{displayName}:</span>
             <span className="text-white font-bold">{percent}%</span>
-            <span className="text-zinc-400 font-normal">({count.toLocaleString('it-IT')})</span>
+            <span className="text-zinc-400 font-normal">({count.toLocaleString('en-US')})</span>
           </div>
         );
       })}
@@ -167,10 +167,10 @@ export default function MessagesDonutChart({ data = [], totalMessages }) {
         aria-hidden="true"
       >
         <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white tracking-tight leading-none drop-shadow-md">
-          {computedTotal.toLocaleString('it-IT')}
+          {computedTotal.toLocaleString('en-US')}
         </span>
         <span className="text-[11px] font-mono text-zinc-400 font-medium uppercase tracking-wider mt-1">
-          Messaggi totali
+          Total Messages
         </span>
       </div>
     </div>
