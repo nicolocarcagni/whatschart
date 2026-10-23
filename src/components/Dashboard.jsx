@@ -256,7 +256,7 @@ export default function Dashboard({ messages, onBack }) {
                 strokeWidth={2}
                 fillOpacity={1} 
                 fill="url(#cyberAreaGradient)" 
-              />     />
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
