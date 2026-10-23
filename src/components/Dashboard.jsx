@@ -1,42 +1,14 @@
 import { useMemo } from 'react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, AreaChart, Area
+  XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  AreaChart, Area
 } from 'recharts';
 import { 
   Users, MessageSquare, Calendar, TrendingUp, Trophy, Flame, Clock, Type, Smile, RotateCcw, Clock3
 } from 'lucide-react';
 import { computeAllAnalytics } from '../utils/analytics';
-
-const CHART_COLORS = [
-  '#10b981', // Emerald
-  '#06b6d4', // Cyan
-  '#8b5cf6', // Violet
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#3b82f6', // Blue
-  '#14b8a6', // Teal
-  '#6366f1'  // Indigo
-];
-
-/**
- * Truncates a string to maxLen characters, appending '…' if truncated.
- */
-function truncateLabel(str, maxLen = 14) {
-  if (!str) return '';
-  return str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
-}
-
-/**
- * Custom XAxis tick renderer in monospace style for clean layout.
- */
-function TruncatedAxisTick({ x, y, payload }) {
-  return (
-    <text x={x} y={y} dy={16} textAnchor="middle" fill="#71717a" fontSize={11} fontFamily="var(--font-mono)">
-      {truncateLabel(payload.value)}
-    </text>
-  );
-}
+import MessagesDonutChart from './MessagesDonutChart';
+import MediaStackedBarChart from './MediaStackedBarChart';
 
 /**
  * Custom dark tooltip for Recharts.
@@ -401,93 +373,38 @@ export default function Dashboard({ messages, onBack }) {
 
       {/* Participants & Media Volume Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Messages by Participant */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden">
+        {/* Messages by Participant (Donut Chart) */}
+        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">Messaggi per Partecipante</h3>
-              <p className="text-xs font-mono text-zinc-500">Percentuale e quota di messaggi inviati da ciascun utente</p>
+              <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
+                Percentuale e quota di messaggi inviati da ciascun utente
+              </p>
             </div>
-            <span className="font-mono text-[11px] text-zinc-400 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900">
+            <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">
               QUOTE
             </span>
           </div>
 
-          <div className="h-[340px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={userVolume}
-                  cx="50%"
-                  cy="45%"
-                  innerRadius="50%"
-                  outerRadius="72%"
-                  paddingAngle={3}
-                  dataKey="value"
-                  stroke="#000000"
-                  strokeWidth={2}
-                >
-                  {userVolume.map((entry, index) => (
-                    <Cell key={`cell-${entry.name}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <RechartsTooltip 
-                  content={<DarkTooltip formatter={(value, name) => [`${value.toLocaleString()} messaggi`, name]} />}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  height={36}
-                  wrapperStyle={{ color: '#a1a1aa', fontFamily: 'var(--font-mono)', fontSize: '11px' }}
-                  formatter={(value) => truncateLabel(value, 16)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+          <MessagesDonutChart data={userVolume} totalMessages={stats.totalMessages} />
         </div>
 
-        {/* Media Shared by Participant */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden">
+        {/* Media Shared by Participant (Stacked BarChart) */}
+        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">Media Condivisi per Partecipante</h3>
-              <p className="text-xs font-mono text-zinc-500">Immagini, video, messaggi vocali e sticker inviati</p>
+              <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
+                Immagini, video, messaggi vocali e sticker inviati
+              </p>
             </div>
-            <span className="font-mono text-[11px] text-zinc-400 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900">
+            <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">
               MEDIA
             </span>
           </div>
 
-          <div className="h-[340px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={mediaBreakdown} margin={{ top: 20, right: 20, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="2 2" stroke="#18181b" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  stroke="#71717a"
-                  fontSize={11}
-                  fontFamily="var(--font-mono)"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={<TruncatedAxisTick />}
-                />
-                <YAxis 
-                  stroke="#71717a" 
-                  fontSize={11} 
-                  fontFamily="var(--font-mono)"
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <RechartsTooltip content={<DarkTooltip />} />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '15px', color: '#a1a1aa', fontFamily: 'var(--font-mono)', fontSize: '11px' }} 
-                />
-                <Bar dataKey="Image" name="Immagini" stackId="a" fill="#06b6d4" radius={[0, 0, 4, 4]} />
-                <Bar dataKey="Video" name="Video" stackId="a" fill="#f43f5e" />
-                <Bar dataKey="Audio" name="Audio" stackId="a" fill="#10b981" />
-                <Bar dataKey="Sticker" name="Sticker" stackId="a" fill="#a855f7" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          <MediaStackedBarChart data={mediaBreakdown} />
         </div>
       </div>
     </div>
