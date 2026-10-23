@@ -5,6 +5,7 @@
 ![Status](https://img.shields.io/badge/Status-Active-success.svg)
 
 ---
+<img width="1550" height="1006" alt="image" src="https://github.com/user-attachments/assets/39475f45-2366-428a-ac84-9a78a32b57e2" />
 
 # WhatsChart
 
