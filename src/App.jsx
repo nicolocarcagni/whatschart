@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { 
-  UploadCloud, Loader2, ShieldCheck, Lock, Cpu, BarChart3, ArrowRight
+  UploadCloud, Loader2, ShieldCheck, Cpu, BarChart3, ArrowRight
 } from 'lucide-react';
 import { parseWhatsAppChat } from './utils/parser';
 import Dashboard from './components/Dashboard';
@@ -86,16 +86,6 @@ function App() {
             <span className="font-bold text-lg tracking-tight text-white font-mono">WhatsChart</span>
           </div>
 
-          <div className="flex items-center gap-3 font-mono text-xs">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-              <span>ELABORAZIONE LOCALE</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-zinc-800 bg-zinc-950 text-zinc-400">
-              <Lock className="w-3 h-3 text-zinc-500" />
-              <span>NESSUN DATO INVIATO</span>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -133,9 +123,8 @@ function App() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                Statistiche della tua <br className="hidden sm:inline" />
                 <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
-                  Chat WhatsApp
+                  WhatsChart
                 </span>
               </h1>
 
