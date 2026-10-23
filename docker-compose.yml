@@ -1,0 +1,9 @@
+services:
+  whatschart:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: whatschart
+    restart: unless-stopped
+    ports:
+      - "8080:80"
