@@ -11,24 +11,35 @@ import MessagesDonutChart from './MessagesDonutChart';
 import MediaStackedBarChart from './MediaStackedBarChart';
 
 /**
- * Custom dark tooltip for Recharts.
+ * Custom dark tooltip for Hourly Activity with peak marker and share percentage.
  */
-function DarkTooltip({ active, payload, label, formatter }) {
+function HourlyTooltip({ active, payload, label, peakHour, totalMessages }) {
   if (active && payload && payload.length) {
+    const value = payload[0].value || 0;
+    const isPeak = label === peakHour?.hour && value > 0;
+    const percentOfDay = totalMessages > 0 ? ((value / totalMessages) * 100).toFixed(1) : '0.0';
+
     return (
-      <div className="bg-zinc-950/95 border border-zinc-800 text-zinc-100 p-3 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs space-y-1">
-        {label && <p className="text-zinc-400 border-b border-zinc-900 pb-1 mb-1 font-semibold">{label}</p>}
-        {payload.map((entry, idx) => (
-          <div key={`tip-${entry.dataKey || entry.name || idx}`} className="flex items-center justify-between gap-4">
-            <span className="flex items-center gap-1.5" style={{ color: entry.color || entry.stroke || '#10b981' }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.color || entry.stroke || '#10b981' }} />
-              {entry.name}:
+      <div className="bg-zinc-900/90 border border-zinc-800 text-zinc-100 p-4 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs space-y-2 min-w-[200px]">
+        <div className="flex items-center justify-between gap-4 border-b border-zinc-800 pb-2">
+          <span className="text-zinc-400 font-normal">{label}:00 – {label}:59</span>
+          {isPeak && (
+            <span className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-semibold">
+              Peak
             </span>
-            <span className="text-white font-bold">
-              {formatter ? formatter(entry.value, entry.name)[0] : entry.value.toLocaleString()}
-            </span>
-          </div>
-        ))}
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="text-zinc-300 font-normal">Messages:</span>
+          </span>
+          <span className="text-white font-semibold">{value.toLocaleString('en-US')}</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-zinc-400 font-normal">Share of Day:</span>
+          <span className="text-emerald-400 font-semibold">{percentOfDay}%</span>
+        </div>
       </div>
     );
   }
@@ -42,91 +53,96 @@ export default function Dashboard({ messages, onBack }) {
   const maxWordCount = topWords[0]?.count || 1;
   const maxEmojiCount = topEmojis[0]?.count || 1;
 
+  const peakHour = useMemo(() => {
+    if (!hourlyData || hourlyData.length === 0) return null;
+    return hourlyData.reduce((max, item) => (item.count > (max?.count || 0) ? item : max), hourlyData[0]);
+  }, [hourlyData]);
+
   return (
     <div className="w-full max-w-7xl mx-auto pb-16 space-y-8">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-900/80 pb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-zinc-900/80 pb-8">
         <div>
-          <div className="flex items-center gap-2 font-mono text-xs text-zinc-400 uppercase tracking-wider mb-1.5">
+          <div className="flex items-center gap-2 font-mono text-xs text-zinc-400 uppercase tracking-wider mb-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>CHAT ANALYSIS</span>
+            <span className="font-semibold text-emerald-400">Chat Analysis</span>
           </div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Statistics Overview</h2>
-          <p className="text-zinc-400 text-sm font-mono mt-1">
+          <h2 className="text-3xl font-semibold text-white tracking-tight">Statistics Overview</h2>
+          <p className="text-zinc-400 text-sm font-mono mt-2 font-normal">
             <span className="text-emerald-400 font-semibold">{stats.totalMessages.toLocaleString('en-US')}</span> messages across <span className="text-white font-semibold">{stats.totalDays.toLocaleString('en-US')}</span> active days
           </p>
         </div>
 
         <button 
           onClick={onBack}
-          className="bg-zinc-950 hover:bg-zinc-900 text-zinc-300 hover:text-white px-5 py-2.5 rounded-xl transition-all border border-zinc-800 hover:border-zinc-700 font-mono text-xs flex items-center gap-2 cursor-pointer shadow-sm group"
+          className="bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-white px-4 py-2 rounded-xl transition-all duration-200 border border-zinc-800 hover:border-emerald-500/40 font-mono text-xs flex items-center gap-2 cursor-pointer shadow-sm group active:scale-[0.98]"
         >
-          <RotateCcw className="w-3.5 h-3.5 text-zinc-500 group-hover:text-emerald-400 transition-colors" />
-          <span>Upload another file</span>
+          <RotateCcw className="w-4 h-4 text-zinc-400 group-hover:text-emerald-400 transition-colors" strokeWidth={1.5} />
+          <span className="font-semibold">Upload another file</span>
         </button>
       </div>
 
       {/* Primary KPI Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Messages */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Total Messages</span>
-            <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg">
-              <MessageSquare className="w-4 h-4" />
+            <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Total Messages</span>
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+              <MessageSquare className="w-4 h-4" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalMessages.toLocaleString('en-US')}</p>
-          <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+          <p className="text-3xl font-semibold font-mono text-white tracking-tight">{stats.totalMessages.toLocaleString('en-US')}</p>
+          <p className="text-xs font-mono text-zinc-400 mt-2 flex items-center gap-2 font-normal">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Messages logged</span>
           </p>
         </div>
         
         {/* Participants */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Participants</span>
+            <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Participants</span>
             <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
-              <Users className="w-4 h-4" />
+              <Users className="w-4 h-4" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalParticipants}</p>
-          <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <p className="text-3xl font-semibold font-mono text-white tracking-tight">{stats.totalParticipants}</p>
+          <p className="text-xs font-mono text-zinc-400 mt-2 flex items-center gap-2 font-normal">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>People in chat</span>
           </p>
         </div>
 
         {/* Active Days */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Active Days</span>
-            <div className="p-2 bg-violet-500/10 border border-violet-500/20 text-violet-400 rounded-lg">
-              <Calendar className="w-4 h-4" />
+            <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Active Days</span>
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+              <Calendar className="w-4 h-4" strokeWidth={1.5} />
             </div>
           </div>
-          <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.totalDays.toLocaleString('en-US')}</p>
-          <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
+          <p className="text-3xl font-semibold font-mono text-white tracking-tight">{stats.totalDays.toLocaleString('en-US')}</p>
+          <p className="text-xs font-mono text-zinc-400 mt-2 flex items-center gap-2 font-normal">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Days with messages</span>
           </p>
         </div>
 
         {/* Daily Cadence */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-zinc-700 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">Daily Average</span>
-            <div className="p-2 bg-teal-500/10 border border-teal-500/20 text-teal-400 rounded-lg">
-              <TrendingUp className="w-4 h-4" />
+            <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Daily Average</span>
+            <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+              <TrendingUp className="w-4 h-4" strokeWidth={1.5} />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <p className="text-3xl font-bold font-mono text-white tracking-tight">{stats.averageMessagesPerDay.toLocaleString('en-US')}</p>
-            <span className="font-mono text-xs text-zinc-500">msg/day</span>
+            <p className="text-3xl font-semibold font-mono text-white tracking-tight">{stats.averageMessagesPerDay.toLocaleString('en-US')}</p>
+            <span className="font-mono text-xs text-zinc-400 font-normal">msg/day</span>
           </div>
-          <p className="text-[11px] font-mono text-zinc-500 mt-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+          <p className="text-xs font-mono text-zinc-400 mt-2 flex items-center gap-2 font-normal">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span>Average messages per day</span>
           </p>
         </div>
@@ -135,44 +151,44 @@ export default function Dashboard({ messages, onBack }) {
       {/* Records and Periods */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Day Record */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-amber-500/40 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-emerald-500/30 transition-all duration-200">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-amber-400/90 font-medium">Single-Day Record</span>
-              <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg">
-                <Trophy className="w-4 h-4" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Single-Day Record</span>
+              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                <Trophy className="w-4 h-4" strokeWidth={1.5} />
               </div>
             </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-2xl font-bold font-mono text-white">{stats.recordDay.count.toLocaleString('en-US')}</p>
-              <span className="font-mono text-xs text-zinc-400">messages</span>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-2xl font-semibold font-mono text-white">{stats.recordDay.count.toLocaleString('en-US')}</p>
+              <span className="font-mono text-xs text-zinc-400 font-normal">messages</span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Record date:</span>
-            <span className="font-mono text-xs text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">
+          <div className="mt-4 pt-4 border-t border-zinc-900/80 flex items-center justify-between">
+            <span className="text-xs font-mono text-zinc-400 font-normal">Record date:</span>
+            <span className="font-mono text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded font-semibold">
               {stats.recordDay.date || 'N/A'}
             </span>
           </div>
         </div>
 
         {/* Longest Streak */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-emerald-500/40 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-emerald-500/30 transition-all duration-200">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400/90 font-medium">Longest Streak</span>
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Longest Streak</span>
               <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
-                <Flame className="w-4 h-4" />
+                <Flame className="w-4 h-4" strokeWidth={1.5} />
               </div>
             </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-2xl font-bold font-mono text-white">{stats.longestStreak.count}</p>
-              <span className="font-mono text-xs text-zinc-400">{stats.longestStreak.count === 1 ? 'day' : 'consecutive days'}</span>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-2xl font-semibold font-mono text-white">{stats.longestStreak.count}</p>
+              <span className="font-mono text-xs text-zinc-400 font-normal">{stats.longestStreak.count === 1 ? 'day' : 'consecutive days'}</span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Period:</span>
-            <span className="font-mono text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">
+          <div className="mt-4 pt-4 border-t border-zinc-900/80 flex items-center justify-between">
+            <span className="text-xs font-mono text-zinc-400 font-normal">Period:</span>
+            <span className="font-mono text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded font-semibold">
               {stats.longestStreak.startDate && stats.longestStreak.endDate
                 ? `${stats.longestStreak.startDate} → ${stats.longestStreak.endDate}`
                 : 'Single day'}
@@ -181,22 +197,22 @@ export default function Dashboard({ messages, onBack }) {
         </div>
 
         {/* Longest Silence / Gap */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-indigo-500/40 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl flex flex-col justify-between group hover:border-emerald-500/30 transition-all duration-200">
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="font-mono text-[11px] uppercase tracking-wider text-indigo-400/90 font-medium">Longest Silence</span>
-              <div className="p-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-lg">
-                <Clock className="w-4 h-4" />
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-mono text-xs uppercase tracking-wider text-zinc-400 font-normal">Longest Silence</span>
+              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                <Clock className="w-4 h-4" strokeWidth={1.5} />
               </div>
             </div>
-            <div className="flex items-baseline gap-2 mt-1">
-              <p className="text-2xl font-bold font-mono text-white">{stats.maxInactivityGap.days}</p>
-              <span className="font-mono text-xs text-zinc-400">{stats.maxInactivityGap.days === 1 ? 'day' : 'days of inactivity'}</span>
+            <div className="flex items-baseline gap-2 mt-2">
+              <p className="text-2xl font-semibold font-mono text-white">{stats.maxInactivityGap.days}</p>
+              <span className="font-mono text-xs text-zinc-400 font-normal">{stats.maxInactivityGap.days === 1 ? 'day' : 'days of inactivity'}</span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-zinc-900/80 flex items-center justify-between">
-            <span className="text-[11px] font-mono text-zinc-500">Interval:</span>
-            <span className="font-mono text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">
+          <div className="mt-4 pt-4 border-t border-zinc-900/80 flex items-center justify-between">
+            <span className="text-xs font-mono text-zinc-400 font-normal">Interval:</span>
+            <span className="font-mono text-xs text-emerald-300 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded font-semibold">
               {stats.maxInactivityGap.fromDate && stats.maxInactivityGap.toDate
                 ? `${stats.maxInactivityGap.fromDate} → ${stats.maxInactivityGap.toDate}`
                 : 'No pause'}
@@ -206,32 +222,46 @@ export default function Dashboard({ messages, onBack }) {
       </div>
 
       {/* Hourly Activity Stream (AreaChart) */}
-      <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden">
+      <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden">
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-4">
             <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
-              <Clock3 className="w-4 h-4" />
+              <Clock3 className="w-4 h-4" strokeWidth={1.5} />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Hourly Activity</h3>
-              <p className="text-xs font-mono text-zinc-500">Message distribution across the 24 hours of the day</p>
+              <h3 className="text-lg font-semibold text-white tracking-tight">Hourly Activity</h3>
+              <p className="text-xs font-mono text-zinc-400 font-normal">Message distribution across the 24 hours of the day</p>
             </div>
           </div>
-          <span className="font-mono text-[11px] text-zinc-400 px-2.5 py-1 rounded-md border border-zinc-800 bg-zinc-900">
-            24 HOURS
-          </span>
+          <div className="flex items-center gap-2">
+            {peakHour && peakHour.count > 0 && (
+              <span className="font-mono text-xs text-emerald-400 px-4 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 font-semibold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Peak: {peakHour.hour}:00 ({peakHour.count.toLocaleString('en-US')})</span>
+              </span>
+            )}
+            <span className="font-mono text-xs text-zinc-400 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900 font-semibold">
+              24 HOURS
+            </span>
+          </div>
         </div>
 
-        <div className="h-[280px] w-full">
+        <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={hourlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <AreaChart data={hourlyData} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
               <defs>
                 <linearGradient id="cyberAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.35}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.32}/>
+                  <stop offset="50%" stopColor="#06b6d4" stopOpacity={0.14}/>
+                  <stop offset="100%" stopColor="#06b6d4" stopOpacity={0}/>
+                </linearGradient>
+                <linearGradient id="hourlyLineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#10b981"/>
+                  <stop offset="50%" stopColor="#06b6d4"/>
+                  <stop offset="100%" stopColor="#38bdf8"/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="2 2" stroke="#18181b" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.4} vertical={false} />
               <XAxis 
                 dataKey="hour" 
                 stroke="#71717a" 
@@ -247,13 +277,19 @@ export default function Dashboard({ messages, onBack }) {
                 tickLine={false} 
                 axisLine={false} 
               />
-              <RechartsTooltip content={<DarkTooltip formatter={(value) => [`${value.toLocaleString('en-US')} messages`, 'Messages']} />} />
+              <RechartsTooltip content={<HourlyTooltip peakHour={peakHour} totalMessages={stats.totalMessages} />} />
               <Area 
                 type="monotone" 
                 dataKey="count" 
                 name="Messages" 
-                stroke="#10b981" 
-                strokeWidth={2}
+                stroke="url(#hourlyLineGradient)" 
+                strokeWidth={1.5}
+                activeDot={{
+                  r: 5,
+                  fill: '#10b981',
+                  stroke: '#09090b',
+                  strokeWidth: 2
+                }}
                 fillOpacity={1} 
                 fill="url(#cyberAreaGradient)" 
               />
@@ -265,18 +301,18 @@ export default function Dashboard({ messages, onBack }) {
       {/* Lexical Analysis: Top Repeated Words & Top Emojis */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Words Leaderboard */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 rounded-lg">
-                <Type className="w-4 h-4" />
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                <Type className="w-4 h-4" strokeWidth={1.5} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Top Words</h3>
-                <p className="text-xs font-mono text-zinc-500">Top 10 repeated words (excluding conjunctions and common words)</p>
+                <h3 className="text-lg font-semibold text-white tracking-tight">Top Words</h3>
+                <p className="text-xs font-mono text-zinc-400 font-normal">Top 10 repeated words (excluding stop words)</p>
               </div>
             </div>
-            <span className="font-mono text-[11px] text-cyan-400 border border-cyan-500/20 bg-cyan-500/5 px-2 py-0.5 rounded">
+            <span className="font-mono text-xs text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 rounded-lg font-semibold">
               TOP 10
             </span>
           </div>
@@ -287,47 +323,47 @@ export default function Dashboard({ messages, onBack }) {
               return (
                 <div 
                   key={item.word} 
-                  className="relative overflow-hidden flex items-center justify-between p-3 rounded-xl border border-zinc-900 bg-zinc-900/40 hover:border-zinc-800 transition-colors"
+                  className="relative overflow-hidden flex items-center justify-between p-4 rounded-xl border border-zinc-900 bg-zinc-900/30 hover:border-zinc-800 transition-colors"
                 >
                   {/* Frequency fill bar */}
                   <div 
-                    className="absolute left-0 top-0 bottom-0 bg-cyan-500/[0.06] pointer-events-none transition-all duration-500"
+                    className="absolute left-0 top-0 bottom-0 bg-emerald-500/[0.08] pointer-events-none transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
 
-                  <div className="flex items-center gap-3 relative z-10">
-                    <span className="font-mono text-xs text-zinc-600 font-semibold w-7">
+                  <div className="flex items-center gap-4 relative z-10">
+                    <span className="font-mono text-xs text-zinc-500 font-semibold w-8">
                       #{String(index + 1).padStart(2, '0')}
                     </span>
-                    <span className="font-mono text-sm text-zinc-200 capitalize font-medium">
+                    <span className="font-mono text-sm text-zinc-200 capitalize font-semibold">
                       {item.word}
                     </span>
                   </div>
 
-                  <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-md shadow-inner">
+                  <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-4 py-2 rounded-lg font-normal shadow-inner">
                     {item.count.toLocaleString('en-US')}
                   </span>
                 </div>
               );
             }) : (
-              <div className="text-center font-mono text-xs text-zinc-600 py-12">No words found in the chat.</div>
+              <div className="text-center font-mono text-xs text-zinc-500 py-16 font-normal">No words found in the chat.</div>
             )}
           </div>
         </div>
 
         {/* Top Emojis Leaderboard */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 bg-pink-500/10 border border-pink-500/20 text-pink-400 rounded-lg">
-                <Smile className="w-4 h-4" />
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg">
+                <Smile className="w-4 h-4" strokeWidth={1.5} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white tracking-tight">Top Emojis</h3>
-                <p className="text-xs font-mono text-zinc-500">Top 10 frequent emojis in the conversation</p>
+                <h3 className="text-lg font-semibold text-white tracking-tight">Top Emojis</h3>
+                <p className="text-xs font-mono text-zinc-400 font-normal">Top 10 frequent emojis in the conversation</p>
               </div>
             </div>
-            <span className="font-mono text-[11px] text-pink-400 border border-pink-500/20 bg-pink-500/5 px-2 py-0.5 rounded">
+            <span className="font-mono text-xs text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 px-4 py-2 rounded-lg font-semibold">
               TOP 10
             </span>
           </div>
@@ -338,16 +374,16 @@ export default function Dashboard({ messages, onBack }) {
               return (
                 <div 
                   key={item.emoji} 
-                  className="relative overflow-hidden flex items-center justify-between p-3 rounded-xl border border-zinc-900 bg-zinc-900/40 hover:border-zinc-800 transition-colors"
+                  className="relative overflow-hidden flex items-center justify-between p-4 rounded-xl border border-zinc-900 bg-zinc-900/30 hover:border-zinc-800 transition-colors"
                 >
                   {/* Frequency fill bar */}
                   <div 
-                    className="absolute left-0 top-0 bottom-0 bg-pink-500/[0.06] pointer-events-none transition-all duration-500"
+                    className="absolute left-0 top-0 bottom-0 bg-emerald-500/[0.08] pointer-events-none transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
 
-                  <div className="flex items-center gap-3 relative z-10">
-                    <span className="font-mono text-xs text-zinc-600 font-semibold w-7">
+                  <div className="flex items-center gap-4 relative z-10">
+                    <span className="font-mono text-xs text-zinc-500 font-semibold w-8">
                       #{String(index + 1).padStart(2, '0')}
                     </span>
                     <span 
@@ -359,13 +395,13 @@ export default function Dashboard({ messages, onBack }) {
                     </span>
                   </div>
 
-                  <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-2.5 py-1 rounded-md shadow-inner">
+                  <span className="relative z-10 font-mono text-xs text-zinc-300 bg-zinc-950 border border-zinc-800 px-4 py-2 rounded-lg font-normal shadow-inner">
                     {item.count.toLocaleString('en-US')}
                   </span>
                 </div>
               );
             }) : (
-              <div className="text-center font-mono text-xs text-zinc-600 py-12">No emojis detected in the chat.</div>
+              <div className="text-center font-mono text-xs text-zinc-500 py-16 font-normal">No emojis detected in the chat.</div>
             )}
           </div>
         </div>
@@ -374,15 +410,15 @@ export default function Dashboard({ messages, onBack }) {
       {/* Participants & Media Volume Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Messages by Participant (Donut Chart) */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Messages by Participant</h3>
-              <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
+              <h3 className="text-lg font-semibold text-white tracking-tight">Messages by Participant</h3>
+              <p className="text-xs font-mono text-zinc-400 mt-2 font-normal">
                 Percentage and share of messages sent by each participant
               </p>
             </div>
-            <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">
+            <span className="font-mono text-xs text-zinc-300 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/60 font-semibold">
               SHARE
             </span>
           </div>
@@ -391,15 +427,15 @@ export default function Dashboard({ messages, onBack }) {
         </div>
 
         {/* Media Shared by Participant (Stacked BarChart) */}
-        <div className="bg-zinc-950/70 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-zinc-700/80 transition-all">
+        <div className="bg-zinc-900/40 p-6 rounded-2xl border border-zinc-800/80 backdrop-blur-xl min-w-0 overflow-hidden flex flex-col justify-between group hover:border-emerald-500/30 transition-all duration-200">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Media Shared by Participant</h3>
-              <p className="text-xs md:text-[13px] font-mono text-zinc-400 mt-1">
+              <h3 className="text-lg font-semibold text-white tracking-tight">Media Shared by Participant</h3>
+              <p className="text-xs font-mono text-zinc-400 mt-2 font-normal">
                 Images, videos, voice notes, and stickers sent
               </p>
             </div>
-            <span className="font-mono text-xs text-zinc-300 px-2.5 py-1 rounded-lg border border-white/10 bg-zinc-900/60 backdrop-blur-sm tracking-wider font-medium shadow-xs">
+            <span className="font-mono text-xs text-zinc-300 px-4 py-2 rounded-lg border border-zinc-800 bg-zinc-900/60 font-semibold">
               MEDIA
             </span>
           </div>

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -12,15 +12,17 @@ import {
 } from 'recharts';
 
 /**
- * Semantic, distinct color scheme for media categories.
- * Crafted with high contrast against dark (#09090b / #121212) backgrounds
- * and completely segregated from the participant entity palette.
+ * Rich, semantic color scheme for media categories:
+ * - Audio: Emerald WhatsApp green
+ * - Images: Vivid Sky Blue
+ * - Videos: Energetic Rose Coral
+ * - Stickers: Playful Violet
  */
 const MEDIA_CONFIG = [
-  { key: 'Image', name: 'Images', color: '#38bdf8' }, // Sky Blue / Neon Cyan
-  { key: 'Video', name: 'Videos', color: '#f43f5e' },  // Vivid Coral / Rose
-  { key: 'Audio', name: 'Audio', color: '#10b981' },   // Emerald (WhatsApp voice notes)
-  { key: 'Sticker', name: 'Stickers', color: '#a855f7' } // Neon Purple
+  { key: 'Audio', name: 'Audio', color: '#10b981' },
+  { key: 'Image', name: 'Images', color: '#0ea5e9' },
+  { key: 'Video', name: 'Videos', color: '#f43f5e' },
+  { key: 'Sticker', name: 'Stickers', color: '#a855f7' }
 ];
 
 /**
@@ -39,9 +41,9 @@ function TruncatedAxisTick({ x, y, payload }) {
     <text
       x={x}
       y={y}
-      dy={14}
+      dy={16}
       textAnchor="middle"
-      fill="#a1a1aa"
+      fill="#71717a"
       fontSize={11}
       fontFamily="var(--font-mono)"
     >
@@ -51,8 +53,7 @@ function TruncatedAxisTick({ x, y, payload }) {
 }
 
 /**
- * Custom Label component rendered on top of each stacked bar,
- * displaying the aggregate media count for that participant.
+ * Custom Label component rendered on top of each stacked bar.
  */
 function CustomBarTotalLabel(props) {
   const { x, y, width, value } = props;
@@ -62,7 +63,7 @@ function CustomBarTotalLabel(props) {
     <text
       x={x + width / 2}
       y={y - 8}
-      fill="#f4f4f5"
+      fill="#a1a1aa"
       textAnchor="middle"
       fontSize={11}
       fontFamily="var(--font-mono)"
@@ -74,11 +75,9 @@ function CustomBarTotalLabel(props) {
 }
 
 /**
- * Custom Tooltip for Stacked BarChart:
- * Displays participant name, aggregated total media,
- * and a rich breakdown list with colored indicators, counts, and percentages.
+ * Custom Tooltip for Stacked BarChart with proportional visual progress bars.
  */
-function MediaCustomTooltip({ active, payload, label }) {
+function MediaCustomTooltip({ active, payload, label, visibleKeys }) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;
@@ -86,44 +85,53 @@ function MediaCustomTooltip({ active, payload, label }) {
   const total = (data.Image || 0) + (data.Video || 0) + (data.Audio || 0) + (data.Sticker || 0);
 
   return (
-    <div className="bg-zinc-950/95 border border-zinc-800 text-zinc-100 p-3.5 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs min-w-[220px] space-y-2.5">
-      {/* Header: Participant name and aggregate total */}
-      <div className="border-b border-zinc-800/80 pb-2">
-        <p className="text-white font-bold text-sm tracking-tight truncate max-w-[200px]">
+    <div className="bg-zinc-900/90 border border-zinc-800 text-zinc-100 p-4 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs min-w-[240px] space-y-4">
+      {/* Header */}
+      <div className="border-b border-zinc-800 pb-2">
+        <p className="text-white font-semibold text-sm tracking-tight truncate max-w-[210px]">
           {participantName}
         </p>
-        <div className="text-zinc-400 text-[11px] mt-1 flex items-center justify-between">
+        <div className="text-zinc-400 text-xs mt-2 flex items-center justify-between font-normal">
           <span>Total media sent:</span>
-          <span className="text-white font-bold bg-zinc-900 border border-zinc-800/80 px-1.5 py-0.5 rounded text-xs shadow-xs">
+          <span className="text-emerald-400 font-semibold bg-zinc-950 border border-zinc-800 px-4 py-2 rounded-lg text-xs">
             {total.toLocaleString('en-US')}
           </span>
         </div>
       </div>
 
-      {/* Itemized media category rows */}
-      <div className="space-y-1.5 pt-0.5">
+      {/* Itemized media category rows with mini progress bars */}
+      <div className="space-y-2">
         {MEDIA_CONFIG.map((category) => {
+          const isVisible = visibleKeys.has(category.key);
           const count = data[category.key] || 0;
           const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
           const isZero = count === 0;
 
+          if (!isVisible) return null;
+
           return (
             <div
               key={category.key}
-              className={`flex items-center justify-between gap-3 text-xs transition-opacity ${
-                isZero ? 'opacity-40' : 'opacity-100'
-              }`}
+              className={`space-y-1 transition-opacity ${isZero ? 'opacity-35' : 'opacity-100'}`}
             >
-              <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full shrink-0 shadow-xs"
-                  style={{ backgroundColor: category.color }}
-                />
-                <span className="text-zinc-300 font-medium">{category.name}</span>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <span className="text-zinc-300 font-normal">{category.name}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-semibold">{count.toLocaleString('en-US')}</span>
+                  <span className="text-zinc-500 font-normal text-xs">({percent}%)</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 font-medium">
-                <span className="text-white font-semibold">{count.toLocaleString('en-US')}</span>
-                <span className="text-zinc-500 text-[10px]">({percent}%)</span>
+              <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ width: `${Math.max(isZero ? 0 : 3, parseFloat(percent))}%`, backgroundColor: category.color }}
+                />
               </div>
             </div>
           );
@@ -134,50 +142,90 @@ function MediaCustomTooltip({ active, payload, label }) {
 }
 
 /**
- * Custom Legend Renderer to guarantee visual synchronization:
- * Items are read in the exact order the stack grows from bottom to top:
- * Images (base) -> Videos -> Audio -> Stickers (top).
+ * Custom Interactive Legend Renderer.
+ * Supports toggling categories on click and segment dimming on hover.
  */
-function CustomMediaLegend() {
+function CustomMediaLegend({ hoveredKey, onHoverKey, visibleKeys, onToggleKey }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pt-3 px-2">
-      {MEDIA_CONFIG.map((item) => (
-        <div
-          key={`media-legend-${item.key}`}
-          className="flex items-center gap-1.5 font-mono text-xs text-zinc-300 bg-zinc-900/40 border border-white/5 px-2.5 py-1 rounded-lg backdrop-blur-sm shadow-xs"
-        >
-          <span
-            className="w-2 h-2 rounded-full shrink-0 shadow-xs"
-            style={{ backgroundColor: item.color }}
-          />
-          <span className="text-zinc-200 font-medium">{item.name}</span>
-        </div>
-      ))}
+    <div className="flex flex-wrap items-center justify-center gap-4 pt-4 px-2">
+      {MEDIA_CONFIG.map((item) => {
+        const isVisible = visibleKeys.has(item.key);
+        const isHovered = hoveredKey === item.key;
+
+        return (
+          <button
+            key={`media-legend-${item.key}`}
+            type="button"
+            onClick={() => onToggleKey(item.key)}
+            onMouseEnter={() => onHoverKey(item.key)}
+            onMouseLeave={() => onHoverKey(null)}
+            className={`flex items-center gap-2 font-mono text-xs px-4 py-2 rounded-lg backdrop-blur-sm cursor-pointer transition-all duration-200 select-none ${
+              !isVisible
+                ? 'opacity-40 bg-zinc-950/40 border border-zinc-900 text-zinc-600 line-through'
+                : isHovered
+                ? 'bg-zinc-800 border-zinc-600 shadow-md scale-105 text-white'
+                : 'bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700 text-zinc-300'
+            }`}
+          >
+            <span
+              className="w-2 h-2 rounded-full shrink-0 transition-transform duration-200"
+              style={{
+                backgroundColor: item.color,
+                transform: isHovered ? 'scale(1.3)' : 'scale(1)'
+              }}
+            />
+            <span className={isHovered ? 'font-semibold' : 'font-normal'}>{item.name}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 /**
  * MediaStackedBarChart Component
- * Renders an optimized stacked bar chart showing media distribution per user.
+ * Visualizes media distribution with interactive category filtering,
+ * hover highlighting, and rich progress bars in tooltips.
  */
 export default function MediaStackedBarChart({ data = [] }) {
-  // Pre-calculate aggregated total on each data record for LabelList display
+  const [hoveredKey, setHoveredKey] = useState(null);
+  const [visibleKeys, setVisibleKeys] = useState(() => new Set(['Audio', 'Image', 'Video', 'Sticker']));
+
+  const handleToggleKey = (key) => {
+    setVisibleKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        // Prevent deselecting all categories
+        if (next.size > 1) next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  };
+
   const enrichedData = useMemo(() => {
-    return data.map((item) => ({
-      ...item,
-      total: (item.Image || 0) + (item.Video || 0) + (item.Audio || 0) + (item.Sticker || 0)
-    }));
-  }, [data]);
+    return data.map((item) => {
+      const total = 
+        (visibleKeys.has('Image') ? (item.Image || 0) : 0) +
+        (visibleKeys.has('Video') ? (item.Video || 0) : 0) +
+        (visibleKeys.has('Audio') ? (item.Audio || 0) : 0) +
+        (visibleKeys.has('Sticker') ? (item.Sticker || 0) : 0);
+      return {
+        ...item,
+        total
+      };
+    });
+  }, [data, visibleKeys]);
 
   return (
-    <div className="h-[340px] w-full select-none">
+    <div className="h-80 w-full select-none">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={enrichedData}
-          margin={{ top: 25, right: 20, left: -20, bottom: 5 }}
+          margin={{ top: 24, right: 16, left: -24, bottom: 0 }}
         >
-          <CartesianGrid strokeDasharray="2 2" stroke="#18181b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.4} vertical={false} />
 
           <XAxis
             dataKey="name"
@@ -198,59 +246,80 @@ export default function MediaStackedBarChart({ data = [] }) {
             domain={[0, (dataMax) => Math.max(5, Math.ceil(dataMax * 1.15))]}
           />
 
-          <RechartsTooltip content={<MediaCustomTooltip />} />
+          <RechartsTooltip
+            cursor={{ fill: 'rgba(255, 255, 255, 0.04)', rx: 6, ry: 6 }}
+            content={<MediaCustomTooltip visibleKeys={visibleKeys} />}
+          />
 
-          {/* Legend aligned with stack order from bottom to top */}
           <Legend
             verticalAlign="bottom"
-            content={<CustomMediaLegend />}
+            content={
+              <CustomMediaLegend
+                hoveredKey={hoveredKey}
+                onHoverKey={setHoveredKey}
+                visibleKeys={visibleKeys}
+                onToggleKey={handleToggleKey}
+              />
+            }
           />
 
-          {/* Stack segment 1: Images (base of stack, square corners) */}
-          <Bar
-            dataKey="Image"
-            name="Images"
-            stackId="mediaStack"
-            fill="#38bdf8"
-            radius={[0, 0, 0, 0]}
-            isAnimationActive={true}
-          />
-
-          {/* Stack segment 2: Videos (intermediate, square corners) */}
-          <Bar
-            dataKey="Video"
-            name="Videos"
-            stackId="mediaStack"
-            fill="#f43f5e"
-            radius={[0, 0, 0, 0]}
-            isAnimationActive={true}
-          />
-
-          {/* Stack segment 3: Audio (intermediate, square corners) */}
-          <Bar
-            dataKey="Audio"
-            name="Audio"
-            stackId="mediaStack"
-            fill="#10b981"
-            radius={[0, 0, 0, 0]}
-            isAnimationActive={true}
-          />
-
-          {/* Stack segment 4: Stickers (top of stack, rounded top corners & aggregate label) */}
-          <Bar
-            dataKey="Sticker"
-            name="Stickers"
-            stackId="mediaStack"
-            fill="#a855f7"
-            radius={[6, 6, 0, 0]}
-            isAnimationActive={true}
-          >
-            <LabelList
-              dataKey="total"
-              position="top"
-              content={<CustomBarTotalLabel />}
+          {/* Segment: Audio */}
+          {visibleKeys.has('Audio') && (
+            <Bar
+              dataKey="Audio"
+              name="Audio"
+              stackId="mediaStack"
+              fill="#10b981"
+              opacity={!hoveredKey || hoveredKey === 'Audio' ? 1 : 0.3}
+              radius={[0, 0, 0, 0]}
+              isAnimationActive={true}
             />
-          </Bar>
+          )}
+
+          {/* Segment: Images */}
+          {visibleKeys.has('Image') && (
+            <Bar
+              dataKey="Image"
+              name="Images"
+              stackId="mediaStack"
+              fill="#0ea5e9"
+              opacity={!hoveredKey || hoveredKey === 'Image' ? 1 : 0.3}
+              radius={[0, 0, 0, 0]}
+              isAnimationActive={true}
+            />
+          )}
+
+          {/* Segment: Videos */}
+          {visibleKeys.has('Video') && (
+            <Bar
+              dataKey="Video"
+              name="Videos"
+              stackId="mediaStack"
+              fill="#f43f5e"
+              opacity={!hoveredKey || hoveredKey === 'Video' ? 1 : 0.3}
+              radius={[0, 0, 0, 0]}
+              isAnimationActive={true}
+            />
+          )}
+
+          {/* Segment: Stickers */}
+          {visibleKeys.has('Sticker') && (
+            <Bar
+              dataKey="Sticker"
+              name="Stickers"
+              stackId="mediaStack"
+              fill="#a855f7"
+              opacity={!hoveredKey || hoveredKey === 'Sticker' ? 1 : 0.3}
+              radius={[4, 4, 0, 0]}
+              isAnimationActive={true}
+            >
+              <LabelList
+                dataKey="total"
+                position="top"
+                content={<CustomBarTotalLabel />}
+              />
+            </Bar>
+          )}
         </BarChart>
       </ResponsiveContainer>
     </div>
