@@ -207,7 +207,7 @@ export default function MediaStackedBarChart({ data = [], isLegacy = false }) {
 
   const mediaConfig = useMemo(() => {
     if (isLegacy || !hasSpecificMedia) {
-      return [{ key: 'Media', name: 'Media (Totale)', color: '#10b981' }];
+      return [{ key: 'Media', name: 'Media (Total)', color: '#10b981' }];
     }
     if (hasGenericMedia) {
       return DEFAULT_MEDIA_CONFIG;
@@ -254,7 +254,7 @@ export default function MediaStackedBarChart({ data = [], isLegacy = false }) {
       {isLegacy && (
         <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-mono p-3 rounded-xl flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
-          <span>Formato Legacy: nelle vecchie esportazioni di WhatsApp tutti gli allegati venivano raggruppati genericamente come &quot;Media omessi&quot;.</span>
+          <span>Legacy format: in older WhatsApp exports, all attachments were grouped generically as &quot;Media omitted&quot;.</span>
         </div>
       )}
 

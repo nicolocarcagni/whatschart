@@ -49,11 +49,11 @@ function HourlyTooltip({ active, payload, label, peakHour, totalMessages }) {
 function getFormatLabel(format) {
   switch (format) {
     case 'modern_ios':
-      return 'iOS Moderno';
+      return 'Modern iOS';
     case 'modern_android':
-      return 'Android Moderno';
+      return 'Modern Android';
     case 'legacy_android':
-      return 'Android Legacy';
+      return 'Legacy Android';
     default:
       return 'Standard';
   }
@@ -138,7 +138,7 @@ export default function Dashboard({
           {onModeChange && (
             <div className="bg-zinc-900/80 border border-zinc-800 p-1 rounded-xl flex items-center gap-1 font-mono text-xs">
               <span className="text-zinc-500 text-[11px] px-2 uppercase font-medium select-none">
-                Modalità:
+                Mode:
               </span>
               <button
                 type="button"
@@ -160,7 +160,7 @@ export default function Dashboard({
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
                 }`}
               >
-                Moderno
+                Modern
               </button>
               <button
                 type="button"
@@ -194,9 +194,9 @@ export default function Dashboard({
               <Users className="w-4 h-4" strokeWidth={1.5} />
             </div>
             <div>
-              <span className="text-white font-semibold">Chat tra 2 partecipanti principali</span>
+              <span className="text-white font-semibold">Direct chat between 2 primary participants</span>
               <p className="text-zinc-400 mt-0.5 font-normal">
-                Rilevati possibili messaggi inoltrati o citati da: <span className="text-amber-400 font-semibold">{participantsMeta.suspectedForwardedSenders.join(', ')}</span>.
+                Detected possible forwarded or quoted messages from: <span className="text-amber-400 font-semibold">{participantsMeta.suspectedForwardedSenders.join(', ')}</span>.
               </p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function Dashboard({
             onClick={handleToggleAllForwarded}
             className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono transition-colors shrink-0 cursor-pointer"
           >
-            {hasAnyForwardedExcluded ? 'Ripristina tutti i partecipanti' : 'Escludi inoltri dai grafici'}
+            {hasAnyForwardedExcluded ? 'Restore all participants' : 'Exclude forwarded from charts'}
           </button>
         </div>
       )}
@@ -554,7 +554,7 @@ export default function Dashboard({
           {/* Participant Filter Chips */}
           {participantsMeta?.allParticipants?.length > 1 && (
             <div className="mb-4 flex flex-wrap items-center gap-2">
-              <span className="font-mono text-xs text-zinc-500 mr-1 select-none">Filtro:</span>
+              <span className="font-mono text-xs text-zinc-500 mr-1 select-none">Filter:</span>
               {participantsMeta.allParticipants.map((item) => {
                 const name = typeof item === 'string' ? item : item.name;
                 const isExcluded = excludedSenders.has(name);
@@ -571,12 +571,12 @@ export default function Dashboard({
                         ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:border-amber-500/50'
                         : 'bg-zinc-800/60 border-zinc-700/60 text-zinc-200 hover:border-emerald-500/40 hover:text-white'
                     }`}
-                    title={isExcluded ? `Clicca per includere ${name}` : `Clicca per escludere ${name}`}
+                    title={isExcluded ? `Click to include ${name}` : `Click to exclude ${name}`}
                   >
                     <span className="max-w-[120px] truncate">{name}</span>
                     {isSuspected && (
                       <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-sans">
-                        Inoltro?
+                        Forwarded?
                       </span>
                     )}
                   </button>
