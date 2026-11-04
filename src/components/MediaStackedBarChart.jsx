@@ -22,7 +22,8 @@ const MEDIA_CONFIG = [
   { key: 'Audio', name: 'Audio', color: '#10b981' },
   { key: 'Image', name: 'Images', color: '#0ea5e9' },
   { key: 'Video', name: 'Videos', color: '#f43f5e' },
-  { key: 'Sticker', name: 'Stickers', color: '#a855f7' }
+  { key: 'Sticker', name: 'Stickers', color: '#a855f7' },
+  { key: 'Media', name: 'Media', color: '#f59e0b' }
 ];
 
 /**
@@ -82,7 +83,7 @@ function MediaCustomTooltip({ active, payload, label, visibleKeys }) {
 
   const data = payload[0].payload;
   const participantName = label || data.name || 'Participant';
-  const total = (data.Image || 0) + (data.Video || 0) + (data.Audio || 0) + (data.Sticker || 0);
+  const total = MEDIA_CONFIG.reduce((acc, cat) => acc + (data[cat.key] || 0), 0);
 
   return (
     <div className="bg-zinc-900/90 border border-zinc-800 text-zinc-100 p-4 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs min-w-[240px] space-y-4">
@@ -189,7 +190,7 @@ function CustomMediaLegend({ hoveredKey, onHoverKey, visibleKeys, onToggleKey })
  */
 export default function MediaStackedBarChart({ data = [] }) {
   const [hoveredKey, setHoveredKey] = useState(null);
-  const [visibleKeys, setVisibleKeys] = useState(() => new Set(['Audio', 'Image', 'Video', 'Sticker']));
+  const [visibleKeys, setVisibleKeys] = useState(() => new Set(['Audio', 'Image', 'Video', 'Sticker', 'Media']));
 
   const handleToggleKey = (key) => {
     setVisibleKeys((prev) => {
@@ -206,17 +207,18 @@ export default function MediaStackedBarChart({ data = [] }) {
 
   const enrichedData = useMemo(() => {
     return data.map((item) => {
-      const total = 
-        (visibleKeys.has('Image') ? (item.Image || 0) : 0) +
-        (visibleKeys.has('Video') ? (item.Video || 0) : 0) +
-        (visibleKeys.has('Audio') ? (item.Audio || 0) : 0) +
-        (visibleKeys.has('Sticker') ? (item.Sticker || 0) : 0);
+      const total = MEDIA_CONFIG.reduce((acc, cat) => {
+        return acc + (visibleKeys.has(cat.key) ? (item[cat.key] || 0) : 0);
+      }, 0);
       return {
         ...item,
         total
       };
     });
   }, [data, visibleKeys]);
+
+  const activeKeys = MEDIA_CONFIG.map((c) => c.key).filter((k) => visibleKeys.has(k));
+  const topKey = activeKeys[activeKeys.length - 1];
 
   return (
     <div className="h-80 w-full select-none">
@@ -271,9 +273,17 @@ export default function MediaStackedBarChart({ data = [] }) {
               stackId="mediaStack"
               fill="#10b981"
               opacity={!hoveredKey || hoveredKey === 'Audio' ? 1 : 0.3}
-              radius={[0, 0, 0, 0]}
+              radius={topKey === 'Audio' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               isAnimationActive={true}
-            />
+            >
+              {topKey === 'Audio' && (
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  content={<CustomBarTotalLabel />}
+                />
+              )}
+            </Bar>
           )}
 
           {/* Segment: Images */}
@@ -284,9 +294,17 @@ export default function MediaStackedBarChart({ data = [] }) {
               stackId="mediaStack"
               fill="#0ea5e9"
               opacity={!hoveredKey || hoveredKey === 'Image' ? 1 : 0.3}
-              radius={[0, 0, 0, 0]}
+              radius={topKey === 'Image' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               isAnimationActive={true}
-            />
+            >
+              {topKey === 'Image' && (
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  content={<CustomBarTotalLabel />}
+                />
+              )}
+            </Bar>
           )}
 
           {/* Segment: Videos */}
@@ -297,9 +315,17 @@ export default function MediaStackedBarChart({ data = [] }) {
               stackId="mediaStack"
               fill="#f43f5e"
               opacity={!hoveredKey || hoveredKey === 'Video' ? 1 : 0.3}
-              radius={[0, 0, 0, 0]}
+              radius={topKey === 'Video' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               isAnimationActive={true}
-            />
+            >
+              {topKey === 'Video' && (
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  content={<CustomBarTotalLabel />}
+                />
+              )}
+            </Bar>
           )}
 
           {/* Segment: Stickers */}
@@ -310,14 +336,37 @@ export default function MediaStackedBarChart({ data = [] }) {
               stackId="mediaStack"
               fill="#a855f7"
               opacity={!hoveredKey || hoveredKey === 'Sticker' ? 1 : 0.3}
-              radius={[4, 4, 0, 0]}
+              radius={topKey === 'Sticker' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
               isAnimationActive={true}
             >
-              <LabelList
-                dataKey="total"
-                position="top"
-                content={<CustomBarTotalLabel />}
-              />
+              {topKey === 'Sticker' && (
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  content={<CustomBarTotalLabel />}
+                />
+              )}
+            </Bar>
+          )}
+
+          {/* Segment: Media */}
+          {visibleKeys.has('Media') && (
+            <Bar
+              dataKey="Media"
+              name="Media"
+              stackId="mediaStack"
+              fill="#f59e0b"
+              opacity={!hoveredKey || hoveredKey === 'Media' ? 1 : 0.3}
+              radius={topKey === 'Media' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+              isAnimationActive={true}
+            >
+              {topKey === 'Media' && (
+                <LabelList
+                  dataKey="total"
+                  position="top"
+                  content={<CustomBarTotalLabel />}
+                />
+              )}
             </Bar>
           )}
         </BarChart>

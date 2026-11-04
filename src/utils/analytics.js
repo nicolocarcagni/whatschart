@@ -37,7 +37,9 @@ const STOP_WORDS = new Set([
   'give', 'day', 'most', 'us', 'are', 'was', 'were', 'been', 'has', 'had',
   // WhatsApp system terms and edit markers
   'message', 'messages', 'edited', 'omitted',
-  'messaggio', 'messaggi', 'modificato', 'modificata', 'modificati', 'modificate'
+  'messaggio', 'messaggi', 'modificato', 'modificata', 'modificati', 'modificate',
+  'omesso', 'omessa', 'omessi', 'omesse', 'media', 'allegato', 'allegati',
+  'eliminato', 'eliminata', 'eliminati', 'eliminate', 'cancellato', 'cancellata'
 ]);
 
 /**
@@ -49,8 +51,11 @@ function parseDateToUtc(dateStr) {
   if (parts.length !== 3) return null;
   const day = parseInt(parts[0], 10);
   const month = parseInt(parts[1], 10) - 1;
-  const year = parseInt(parts[2], 10);
+  let year = parseInt(parts[2], 10);
   if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+  if (year < 100) {
+    year += (year < 70 ? 2000 : 1900);
+  }
   return Date.UTC(year, month, day);
 }
 
@@ -139,10 +144,14 @@ export function computeAllAnalytics(messages) {
     }
 
     if (!mediaByUser[sender]) {
-      mediaByUser[sender] = { name: sender, Image: 0, Video: 0, Audio: 0, Sticker: 0 };
+      mediaByUser[sender] = { name: sender, Image: 0, Video: 0, Audio: 0, Sticker: 0, Media: 0 };
     }
     if (isMedia) {
-      mediaByUser[sender][type] += 1;
+      if (mediaByUser[sender][type] !== undefined) {
+        mediaByUser[sender][type] += 1;
+      } else {
+        mediaByUser[sender].Media = (mediaByUser[sender].Media || 0) + 1;
+      }
     }
 
     if (!isMedia && message) {
@@ -155,10 +164,11 @@ export function computeAllAnalytics(messages) {
       // Word extraction: clean URLs, WhatsApp edit tags and system artifacts
       const cleanText = message
         .replace(/https?:\/\/\S+/gi, ' ')
-        .replace(/<[^>]*(?:message|messaggio)[^>]*>/gi, ' ')
+        .replace(/<[^>]+>/gi, ' ')
         .replace(/\b(?:this )?message (?:was )?edited\b/gi, ' ')
         .replace(/\b(?:questo )?messaggio (?:è stato )?modificato\b/gi, ' ')
-        .replace(/\b\w+ omitted\b/gi, ' ');
+        .replace(/\b\w+ omitted\b/gi, ' ')
+        .replace(/\b\w+ omess[aoie]\b/gi, ' ');
       const words = cleanText.toLowerCase().match(/[\p{L}]{3,}/gu);
       if (words) {
         for (let j = 0; j < words.length; j++) {
@@ -267,8 +277,8 @@ export function computeAllAnalytics(messages) {
   const userVolume = filteredUserVolume.sort((a, b) => b.value - a.value);
 
   const mediaBreakdown = Object.values(mediaByUser).sort((a, b) => {
-    const totalA = a.Image + a.Video + a.Audio + a.Sticker;
-    const totalB = b.Image + b.Video + b.Audio + b.Sticker;
+    const totalA = (a.Image || 0) + (a.Video || 0) + (a.Audio || 0) + (a.Sticker || 0) + (a.Media || 0);
+    const totalB = (b.Image || 0) + (b.Video || 0) + (b.Audio || 0) + (b.Sticker || 0) + (b.Media || 0);
     return totalB - totalA;
   });
 
