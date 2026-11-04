@@ -5,7 +5,6 @@ import {
   Cell,
   Sector,
   Tooltip as RechartsTooltip,
-  Legend,
   ResponsiveContainer
 } from 'recharts';
 
@@ -99,52 +98,9 @@ function DonutCustomTooltip({ active, payload, totalMessages }) {
 }
 
 /**
- * Custom Interactive Legend Renderer.
- * Hovering any badge dynamically highlights that participant's slice in the donut chart.
- */
-function CustomDonutLegend({ payload, totalMessages, activeIndex, onHoverIndex }) {
-  if (!payload || !payload.length) return null;
-
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-2 pt-4 px-2">
-      {payload.map((entry, index) => {
-        const item = entry.payload || {};
-        const count = item.value ?? 0;
-        const percent = totalMessages > 0 ? Math.round((count / totalMessages) * 100) : 0;
-        const displayName = truncateLabel(entry.value || item.name || '', 14);
-        const isHovered = activeIndex === index;
-
-        return (
-          <div
-            key={`donut-legend-${entry.value || index}`}
-            onMouseEnter={() => onHoverIndex(index)}
-            onMouseLeave={() => onHoverIndex(null)}
-            className={`flex items-center gap-2 font-mono text-xs px-4 py-2 rounded-lg backdrop-blur-sm cursor-pointer transition-all duration-200 ${
-              isHovered
-                ? 'bg-zinc-800 border-zinc-600 shadow-md scale-105'
-                : 'bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700'
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full shrink-0 transition-transform duration-200"
-              style={{ backgroundColor: entry.color, transform: isHovered ? 'scale(1.3)' : 'scale(1)' }}
-            />
-            <span className={`font-normal ${isHovered ? 'text-white font-semibold' : 'text-zinc-300'}`}>
-              {displayName}:
-            </span>
-            <span className="text-white font-semibold">{percent}%</span>
-            <span className="text-zinc-400 font-normal">({count.toLocaleString('en-US')})</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
  * MessagesDonutChart Component
  * Refined donut chart with rich participant colors, active sector highlighting,
- * interactive legend link, and reactive center KPI display.
+ * interactive HTML legend link, and strictly concentric center KPI display.
  */
 export default function MessagesDonutChart({ data = [], totalMessages }) {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -158,92 +114,120 @@ export default function MessagesDonutChart({ data = [], totalMessages }) {
 
   const activeParticipant = activeIndex !== null && data[activeIndex] ? data[activeIndex] : null;
 
+  if (!data || data.length === 0 || computedTotal === 0) {
+    return (
+      <div className="h-64 w-full flex items-center justify-center font-mono text-xs text-zinc-500">
+        No message data available
+      </div>
+    );
+  }
+
   return (
-    <div className="relative h-80 w-full select-none">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="45%"
-            innerRadius="60%"
-            outerRadius="80%"
-            paddingAngle={2}
-            cornerRadius={4}
-            dataKey="value"
-            stroke="#09090b"
-            strokeWidth={1.5}
-            activeIndex={activeIndex !== null ? activeIndex : undefined}
-            activeShape={renderActiveShape}
-            onMouseEnter={(_, index) => setActiveIndex(index)}
-            onMouseLeave={() => setActiveIndex(null)}
-            isAnimationActive={true}
-          >
-            {data.map((entry, index) => {
-              const isDimmed = activeIndex !== null && activeIndex !== index;
-              return (
-                <Cell
-                  key={`donut-cell-${entry.name || index}`}
-                  fill={getParticipantColor(entry.name, index)}
-                  opacity={isDimmed ? 0.35 : 1}
-                  style={{ transition: 'opacity 0.2s ease-in-out' }}
-                />
-              );
-            })}
-          </Pie>
-
-          <RechartsTooltip
-            content={<DonutCustomTooltip totalMessages={computedTotal} />}
-          />
-
-          <Legend
-            verticalAlign="bottom"
-            content={
-              <CustomDonutLegend
-                totalMessages={computedTotal}
-                activeIndex={activeIndex}
-                onHoverIndex={setActiveIndex}
-              />
-            }
-          />
-        </PieChart>
-      </ResponsiveContainer>
-
-      {/* Donut Center Label: Dynamically displays hovered participant or overall total */}
-      <div
-        className="absolute pointer-events-none flex flex-col items-center justify-center text-center transition-all duration-200"
-        style={{
-          left: '50%',
-          top: '45%',
-          transform: 'translate(-50%, -50%)',
-        }}
-        aria-hidden="true"
-      >
-        {activeParticipant ? (
-          <>
-            <span
-              className="text-xs font-mono font-semibold max-w-[130px] truncate"
-              style={{ color: getParticipantColor(activeParticipant.name, activeIndex) }}
+    <div className="flex flex-col items-center w-full">
+      {/* Donut Chart Container: Strictly centered coordinates without internal Recharts legend displacement */}
+      <div className="relative h-64 w-full select-none">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={70}
+              outerRadius={96}
+              paddingAngle={2}
+              cornerRadius={4}
+              dataKey="value"
+              stroke="#09090b"
+              strokeWidth={1.5}
+              activeIndex={activeIndex !== null ? activeIndex : undefined}
+              activeShape={renderActiveShape}
+              onMouseEnter={(_, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              isAnimationActive={true}
             >
-              {activeParticipant.name}
-            </span>
-            <span className="text-2xl sm:text-3xl font-semibold font-mono text-white tracking-tight leading-none mt-2">
-              {(activeParticipant.value || 0).toLocaleString('en-US')}
-            </span>
-            <span className="text-xs font-mono text-zinc-400 font-normal uppercase tracking-wider mt-2">
-              {computedTotal > 0 ? ((activeParticipant.value / computedTotal) * 100).toFixed(1) : 0}% share
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="text-2xl sm:text-3xl font-semibold font-mono text-white tracking-tight leading-none drop-shadow-md">
-              {computedTotal.toLocaleString('en-US')}
-            </span>
-            <span className="text-xs font-mono text-zinc-400 font-normal uppercase tracking-wider mt-2">
-              Total Messages
-            </span>
-          </>
-        )}
+              {data.map((entry, index) => {
+                const isDimmed = activeIndex !== null && activeIndex !== index;
+                return (
+                  <Cell
+                    key={`donut-cell-${entry.name || index}`}
+                    fill={getParticipantColor(entry.name, index)}
+                    opacity={isDimmed ? 0.35 : 1}
+                    style={{ transition: 'opacity 0.2s ease-in-out' }}
+                  />
+                );
+              })}
+            </Pie>
+
+            <RechartsTooltip
+              content={<DonutCustomTooltip totalMessages={computedTotal} />}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+
+        {/* Concentric Center KPI: Mathematically centered with Pie (50% / 50%) */}
+        <div
+          className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center text-center transition-all duration-200"
+          aria-hidden="true"
+        >
+          {activeParticipant ? (
+            <>
+              <span
+                className="text-xs font-mono font-semibold max-w-[130px] truncate px-1"
+                style={{ color: getParticipantColor(activeParticipant.name, activeIndex) }}
+              >
+                {activeParticipant.name}
+              </span>
+              <span className="text-2xl sm:text-3xl font-semibold font-mono text-white tracking-tight leading-none mt-1">
+                {(activeParticipant.value || 0).toLocaleString('en-US')}
+              </span>
+              <span className="text-[11px] font-mono text-zinc-400 font-normal uppercase tracking-wider mt-1">
+                {computedTotal > 0 ? ((activeParticipant.value / computedTotal) * 100).toFixed(1) : 0}% share
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="text-2xl sm:text-3xl font-semibold font-mono text-white tracking-tight leading-none drop-shadow-md">
+                {computedTotal.toLocaleString('en-US')}
+              </span>
+              <span className="text-[11px] font-mono text-zinc-400 font-normal uppercase tracking-wider mt-1.5">
+                Total Messages
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Interactive Legend in normal document flow: Never clips or shifts pie center regardless of participant count */}
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-4 px-2 w-full">
+        {data.map((entry, index) => {
+          const count = entry.value ?? 0;
+          const percent = computedTotal > 0 ? Math.round((count / computedTotal) * 100) : 0;
+          const color = getParticipantColor(entry.name, index);
+          const isHovered = activeIndex === index;
+
+          return (
+            <div
+              key={`donut-legend-${entry.name || index}`}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              className={`flex items-center gap-2 font-mono text-xs px-3 py-1.5 rounded-lg backdrop-blur-sm cursor-pointer transition-all duration-200 ${
+                isHovered
+                  ? 'bg-zinc-800 border-zinc-600 shadow-md scale-105'
+                  : 'bg-zinc-900/60 border border-zinc-800 hover:border-zinc-700'
+              }`}
+            >
+              <span
+                className="w-2 h-2 rounded-full shrink-0 transition-transform duration-200"
+                style={{ backgroundColor: color, transform: isHovered ? 'scale(1.3)' : 'scale(1)' }}
+              />
+              <span className={`font-normal truncate max-w-[120px] ${isHovered ? 'text-white font-semibold' : 'text-zinc-300'}`}>
+                {truncateLabel(entry.name, 14)}:
+              </span>
+              <span className="text-white font-semibold">{percent}%</span>
+              <span className="text-zinc-400 font-normal">({count.toLocaleString('en-US')})</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
