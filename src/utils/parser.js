@@ -228,6 +228,18 @@ const ANDROID_MODERN_REGEX = /^(\d{1,4}[/.-]\d{1,2}[/.-]\d{4})(?:,\s*|\s*-\s*|\s
 // Legacy Android format: DD/MM/YY, HH:MM - Sender: Message (allows 2-digit and 4-digit years)
 const ANDROID_LEGACY_REGEX = /^(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})(?:,\s*|\s*-\s*|\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*-\s*(?:([^:]+?):\s*(.*)|(.*))$/;
 
+// Matches an embedded WhatsApp message header starting with date, time, and sender:
+// e.g. [15/08/26, 00:50:28] Sender: or 15/08/2026, 00:50 - Sender:
+const EMBEDDED_CHAT_HEADER_REGEX = /^(?:\[(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*(?:-\s*)?|(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})(?:,\s*|\s*-\s*|\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*-\s*)([^:]+?):\s*/;
+
+/**
+ * Returns true if text starts with a WhatsApp message header (date, time, sender).
+ */
+function isEmbeddedChatHeader(text) {
+  if (!text) return false;
+  return EMBEDDED_CHAT_HEADER_REGEX.test(text.trim());
+}
+
 /**
  * Converts a DD/MM/YYYY date string into a UTC midnight timestamp.
  */
@@ -279,6 +291,7 @@ export function detectChatFormat(text) {
   const legacyAndroidRegex = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2}(?:,\s*|\s*-\s*|\s+)\d{1,2}:\d{2}/;
 
   for (const rawLine of lines) {
+    if (rawLine.startsWith(' ') || rawLine.startsWith('\t')) continue;
     const line = rawLine
       .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
       .replace(/[\u00A0\u202F]/g, ' ')
@@ -394,10 +407,12 @@ export function parseWhatsAppChat(text, options = {}) {
   const lines = text.split('\n');
   const messages = [];
   let currentMessage = null;
-  let lastTimestamp = 0;
+  let currentMessageTs = null;
+  let isPastingChatLog = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
+    const hasLeadingWhitespace = rawLine.startsWith(' ') || rawLine.startsWith('\t');
     // Strip hidden Unicode directionality marks and normalize non-breaking spaces
     const line = rawLine
       .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
@@ -413,25 +428,36 @@ export function parseWhatsAppChat(text, options = {}) {
       const normTime = normalizeTime(parsed.time);
       const candidateTs = getMessageTimestamp(normDate, normTime);
 
-      // Chronological sanity check:
-      // If currentMessage exists and candidate timestamp is strictly in the past (by > 60s),
-      // this line is an embedded quote/forwarded excerpt from an earlier conversation, NOT a new chat message.
-      if (currentMessage && candidateTs !== null && lastTimestamp > 0 && candidateTs < lastTimestamp - 60000) {
+      const isPastCandidate = candidateTs !== null && currentMessageTs !== null && candidateTs < currentMessageTs;
+      const isSignificantlyEarlier = candidateTs !== null && currentMessageTs !== null && candidateTs < currentMessageTs - 30000;
+
+      // Embedded / pasted chat block handling:
+      // If currentMessage is active, check if this line belongs to an ongoing or new pasted chat block:
+      // a) Current message was already pasting a chat log and candidate continues internal sequence (< currentMessageTs)
+      // b) Candidate timestamp is significantly earlier than currentMessageTs (> 30s in the past)
+      // c) Candidate line has abnormal leading indentation (common when copying multiline chat logs)
+      if (currentMessage && (
+        (isPastingChatLog && isPastCandidate) ||
+        isSignificantlyEarlier ||
+        hasLeadingWhitespace ||
+        (isPastCandidate && isEmbeddedChatHeader(line))
+      )) {
         currentMessage.message += '\n' + rawLine;
+        isPastingChatLog = true;
         continue;
       }
 
+      // Closing of pasted block / transition to new message:
+      // Reached when line matches effectiveFormat without leading indentation and candidateTs >= currentMessageTs
       if (currentMessage) {
         messages.push(currentMessage);
         currentMessage = null;
+        currentMessageTs = null;
+        isPastingChatLog = false;
       }
 
       if (parsed.isSystem) {
         continue;
-      }
-
-      if (candidateTs !== null) {
-        lastTimestamp = candidateTs;
       }
 
       const messageText = parsed.messageText || '';
@@ -445,8 +471,13 @@ export function parseWhatsAppChat(text, options = {}) {
         type,
         isMedia
       };
+      currentMessageTs = candidateTs;
+      isPastingChatLog = isEmbeddedChatHeader(messageText);
     } else {
       if (currentMessage) {
+        if (isEmbeddedChatHeader(line)) {
+          isPastingChatLog = true;
+        }
         currentMessage.message += '\n' + rawLine; // Retain original line break formatting
       }
     }
