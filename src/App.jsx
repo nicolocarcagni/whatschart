@@ -7,6 +7,10 @@ import Dashboard from './components/Dashboard';
 
 function App() {
   const [messages, setMessages] = useState([]);
+  const [rawText, setRawText] = useState('');
+  const [formatMode, setFormatMode] = useState('auto');
+  const [detectedFormat, setDetectedFormat] = useState('modern_ios');
+  const [isLegacy, setIsLegacy] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,10 +25,14 @@ function App() {
         setTimeout(() => {
           try {
             const text = e.target.result;
-            const parsed = parseWhatsAppChat(text);
+            const parsed = parseWhatsAppChat(text, { mode: 'auto' });
             if (parsed.length === 0) {
               setError("No valid messages found. Please ensure this is a valid WhatsApp chat export.");
             } else {
+              setRawText(text);
+              setFormatMode('auto');
+              setDetectedFormat(parsed.detectedFormat);
+              setIsLegacy(parsed.isLegacy);
               setMessages(parsed);
             }
           } catch {
@@ -42,6 +50,22 @@ function App() {
     } else {
       setError("Unsupported format. Please upload the _chat.txt file exported from WhatsApp.");
     }
+  };
+
+  const handleModeChange = (newMode) => {
+    if (!rawText) return;
+    setFormatMode(newMode);
+    const parsed = parseWhatsAppChat(rawText, { mode: newMode });
+    setDetectedFormat(parsed.detectedFormat);
+    setIsLegacy(parsed.isLegacy);
+    setMessages(parsed);
+  };
+
+  const handleBack = () => {
+    setMessages([]);
+    setRawText('');
+    setFormatMode('auto');
+    setIsLegacy(false);
   };
 
   const onDragOver = (e) => {
@@ -195,7 +219,14 @@ function App() {
             </p>
           </div>
         ) : (
-          <Dashboard messages={messages} onBack={() => setMessages([])} />
+          <Dashboard 
+            messages={messages} 
+            onBack={handleBack}
+            formatMode={formatMode}
+            detectedFormat={detectedFormat}
+            isLegacy={isLegacy}
+            onModeChange={handleModeChange}
+          />
         )}
       </main>
 

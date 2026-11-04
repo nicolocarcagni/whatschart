@@ -218,16 +218,132 @@ export function detectMediaType(messageText) {
   return { type: 'Text', isMedia: false };
 }
 
+// Regex definitions for distinct chat export formats
 // iOS format: [DD/MM/YYYY, HH:MM:SS] Sender: Message or [DD/MM/YYYY, HH:MM:SS] System message
 const IOS_LINE_REGEX = /^\[(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})[,\s]+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*(?:-\s*)?(?:([^:]+?):\s*(.*)|(.*))$/;
 
-// Android / standard format: DD/MM/YY, HH:MM - Sender: Message or DD/MM/YY, HH:MM - System message
-const ANDROID_LINE_REGEX = /^(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})(?:,\s*|\s*-\s*|\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*-\s*(?:([^:]+?):\s*(.*)|(.*))$/;
+// Modern Android format: DD/MM/YYYY, HH:MM - Sender: Message (strict 4-digit year)
+const ANDROID_MODERN_REGEX = /^(\d{1,4}[/.-]\d{1,2}[/.-]\d{4})(?:,\s*|\s*-\s*|\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*-\s*(?:([^:]+?):\s*(.*)|(.*))$/;
+
+// Legacy Android format: DD/MM/YY, HH:MM - Sender: Message (allows 2-digit and 4-digit years)
+const ANDROID_LEGACY_REGEX = /^(\d{1,4}[/.-]\d{1,2}[/.-]\d{2,4})(?:,\s*|\s*-\s*|\s+)(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*-\s*(?:([^:]+?):\s*(.*)|(.*))$/;
 
 /**
- * Attempts to parse a line into timestamp, sender, and message content.
+ * Converts a DD/MM/YYYY date string into a UTC midnight timestamp.
  */
-function parseLine(line) {
+function parseDateToUtc(dateStr) {
+  if (!dateStr) return null;
+  const parts = dateStr.split('/');
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1;
+  let year = parseInt(parts[2], 10);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+  if (year < 100) year += (year < 70 ? 2000 : 1900);
+  return Date.UTC(year, month, day);
+}
+
+/**
+ * Converts HH:MM or HH:MM:SS string to milliseconds from midnight.
+ */
+function parseTimeToMs(timeStr) {
+  if (!timeStr) return 0;
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0], 10) || 0;
+  const m = parseInt(parts[1], 10) || 0;
+  const s = parseInt(parts[2], 10) || 0;
+  return (h * 3600 + m * 60 + s) * 1000;
+}
+
+/**
+ * Returns UTC timestamp (ms) for a normalized date and time string.
+ */
+function getMessageTimestamp(dateStr, timeStr) {
+  const dateUtc = parseDateToUtc(dateStr);
+  if (dateUtc === null) return null;
+  return dateUtc + parseTimeToMs(timeStr);
+}
+
+/**
+ * Inspects a sample of the export file to detect the platform format and version.
+ * Returns { format: 'modern_ios' | 'modern_android' | 'legacy_android', isLegacy: boolean }.
+ */
+export function detectChatFormat(text) {
+  const lines = text.split('\n').slice(0, 100);
+  let iosCount = 0;
+  let modernAndroidCount = 0;
+  let legacyAndroidCount = 0;
+
+  const iosRegex = /^\[\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}[,\s]+\d{1,2}:\d{2}/;
+  const modernAndroidRegex = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{4}(?:,\s*|\s*-\s*|\s+)\d{1,2}:\d{2}/;
+  const legacyAndroidRegex = /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2}(?:,\s*|\s*-\s*|\s+)\d{1,2}:\d{2}/;
+
+  for (const rawLine of lines) {
+    const line = rawLine
+      .replace(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '')
+      .replace(/[\u00A0\u202F]/g, ' ')
+      .trim();
+    if (!line) continue;
+
+    if (line.startsWith('[')) {
+      if (iosRegex.test(line)) iosCount++;
+    } else {
+      if (modernAndroidRegex.test(line)) {
+        modernAndroidCount++;
+      } else if (legacyAndroidRegex.test(line)) {
+        legacyAndroidCount++;
+      }
+    }
+  }
+
+  if (iosCount > modernAndroidCount && iosCount > legacyAndroidCount) {
+    return { format: 'modern_ios', isLegacy: false };
+  }
+  if (legacyAndroidCount > modernAndroidCount) {
+    return { format: 'legacy_android', isLegacy: true };
+  }
+  return { format: 'modern_android', isLegacy: false };
+}
+
+/**
+ * Attempts to parse a line matching the designated format mode.
+ */
+function parseLine(line, effectiveFormat) {
+  if (effectiveFormat === 'modern_ios') {
+    if (line.startsWith('[')) {
+      const match = line.match(IOS_LINE_REGEX);
+      if (match) {
+        return {
+          isMatch: true,
+          date: match[1],
+          time: match[2],
+          sender: match[3],
+          messageText: match[4] !== undefined ? match[4] : match[5],
+          isSystem: match[3] === undefined || isSystemMessage(match[3]) || isSystemMessage(match[4] || match[5])
+        };
+      }
+    }
+    return { isMatch: false };
+  }
+
+  if (effectiveFormat === 'modern_android') {
+    if (!line.startsWith('[')) {
+      const match = line.match(ANDROID_MODERN_REGEX);
+      if (match) {
+        return {
+          isMatch: true,
+          date: match[1],
+          time: match[2],
+          sender: match[3],
+          messageText: match[4] !== undefined ? match[4] : match[5],
+          isSystem: match[3] === undefined || isSystemMessage(match[3]) || isSystemMessage(match[4] || match[5])
+        };
+      }
+    }
+    return { isMatch: false };
+  }
+
+  // legacy_android format
   if (line.startsWith('[')) {
     const match = line.match(IOS_LINE_REGEX);
     if (match) {
@@ -240,18 +356,18 @@ function parseLine(line) {
         isSystem: match[3] === undefined || isSystemMessage(match[3]) || isSystemMessage(match[4] || match[5])
       };
     }
-  }
-
-  const match = line.match(ANDROID_LINE_REGEX);
-  if (match) {
-    return {
-      isMatch: true,
-      date: match[1],
-      time: match[2],
-      sender: match[3],
-      messageText: match[4] !== undefined ? match[4] : match[5],
-      isSystem: match[3] === undefined || isSystemMessage(match[3]) || isSystemMessage(match[4] || match[5])
-    };
+  } else {
+    const match = line.match(ANDROID_LEGACY_REGEX);
+    if (match) {
+      return {
+        isMatch: true,
+        date: match[1],
+        time: match[2],
+        sender: match[3],
+        messageText: match[4] !== undefined ? match[4] : match[5],
+        isSystem: match[3] === undefined || isSystemMessage(match[3]) || isSystemMessage(match[4] || match[5])
+      };
+    }
   }
 
   return { isMatch: false };
@@ -259,14 +375,26 @@ function parseLine(line) {
 
 /**
  * Parses exported WhatsApp chat text into structured message objects.
- * Supports iOS format: [DD/MM/YYYY, HH:MM:SS] Sender: Message
- * Supports Android/Legacy format: DD/MM/YY, HH:MM - Sender: Message
- * Handles invisible Unicode control characters (LRM, RTL, Isolates) and multiline continuations.
+ * Supports auto-detection and manual format modes ('auto', 'modern', 'legacy').
+ * Prevents forwarded/quoted message excerpts from creating phantom participants.
  */
-export function parseWhatsAppChat(text) {
+export function parseWhatsAppChat(text, options = {}) {
+  const { mode = 'auto' } = options;
+  const detected = detectChatFormat(text);
+
+  let effectiveFormat = detected.format;
+  if (mode === 'legacy') {
+    effectiveFormat = 'legacy_android';
+  } else if (mode === 'modern') {
+    effectiveFormat = detected.format === 'modern_ios' ? 'modern_ios' : 'modern_android';
+  }
+
+  const isLegacy = effectiveFormat === 'legacy_android';
+
   const lines = text.split('\n');
   const messages = [];
   let currentMessage = null;
+  let lastTimestamp = 0;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
@@ -278,9 +406,21 @@ export function parseWhatsAppChat(text) {
 
     if (!line) continue;
 
-    const parsed = parseLine(line);
+    const parsed = parseLine(line, effectiveFormat);
 
     if (parsed.isMatch) {
+      const normDate = normalizeDate(parsed.date);
+      const normTime = normalizeTime(parsed.time);
+      const candidateTs = getMessageTimestamp(normDate, normTime);
+
+      // Chronological sanity check:
+      // If currentMessage exists and candidate timestamp is strictly in the past (by > 60s),
+      // this line is an embedded quote/forwarded excerpt from an earlier conversation, NOT a new chat message.
+      if (currentMessage && candidateTs !== null && lastTimestamp > 0 && candidateTs < lastTimestamp - 60000) {
+        currentMessage.message += '\n' + rawLine;
+        continue;
+      }
+
       if (currentMessage) {
         messages.push(currentMessage);
         currentMessage = null;
@@ -290,14 +430,16 @@ export function parseWhatsAppChat(text) {
         continue;
       }
 
-      const date = normalizeDate(parsed.date);
-      const time = normalizeTime(parsed.time);
+      if (candidateTs !== null) {
+        lastTimestamp = candidateTs;
+      }
+
       const messageText = parsed.messageText || '';
       const { type, isMedia } = detectMediaType(messageText);
 
       currentMessage = {
-        date,
-        time,
+        date: normDate,
+        time: normTime,
         sender: parsed.sender.trim(),
         message: messageText,
         type,
@@ -313,6 +455,12 @@ export function parseWhatsAppChat(text) {
   if (currentMessage) {
     messages.push(currentMessage);
   }
+
+  // Attach metadata properties for flexible consumption (array or object destructuring)
+  messages.detectedFormat = detected.format;
+  messages.effectiveFormat = effectiveFormat;
+  messages.isLegacy = isLegacy;
+  messages.messages = messages;
 
   return messages;
 }

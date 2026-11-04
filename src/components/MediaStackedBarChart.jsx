@@ -17,13 +17,14 @@ import {
  * - Images: Vivid Sky Blue
  * - Videos: Energetic Rose Coral
  * - Stickers: Playful Violet
+ * - Media: Emerald in legacy or Amber for generic attachments
  */
-const MEDIA_CONFIG = [
+const DEFAULT_MEDIA_CONFIG = [
   { key: 'Audio', name: 'Audio', color: '#10b981' },
   { key: 'Image', name: 'Images', color: '#0ea5e9' },
   { key: 'Video', name: 'Videos', color: '#f43f5e' },
   { key: 'Sticker', name: 'Stickers', color: '#a855f7' },
-  { key: 'Media', name: 'Media', color: '#f59e0b' }
+  { key: 'Media', name: 'Other Media', color: '#f59e0b' }
 ];
 
 /**
@@ -78,12 +79,12 @@ function CustomBarTotalLabel(props) {
 /**
  * Custom Tooltip for Stacked BarChart with proportional visual progress bars.
  */
-function MediaCustomTooltip({ active, payload, label, visibleKeys }) {
+function MediaCustomTooltip({ active, payload, label, visibleKeys, mediaConfig }) {
   if (!active || !payload || !payload.length) return null;
 
   const data = payload[0].payload;
   const participantName = label || data.name || 'Participant';
-  const total = MEDIA_CONFIG.reduce((acc, cat) => acc + (data[cat.key] || 0), 0);
+  const total = mediaConfig.reduce((acc, cat) => acc + (data[cat.key] || 0), 0);
 
   return (
     <div className="bg-zinc-900/90 border border-zinc-800 text-zinc-100 p-4 rounded-xl shadow-2xl backdrop-blur-md font-mono text-xs min-w-[240px] space-y-4">
@@ -102,7 +103,7 @@ function MediaCustomTooltip({ active, payload, label, visibleKeys }) {
 
       {/* Itemized media category rows with mini progress bars */}
       <div className="space-y-2">
-        {MEDIA_CONFIG.map((category) => {
+        {mediaConfig.map((category) => {
           const isVisible = visibleKeys.has(category.key);
           const count = data[category.key] || 0;
           const percent = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
@@ -146,10 +147,12 @@ function MediaCustomTooltip({ active, payload, label, visibleKeys }) {
  * Custom Interactive Legend Renderer.
  * Supports toggling categories on click and segment dimming on hover.
  */
-function CustomMediaLegend({ hoveredKey, onHoverKey, visibleKeys, onToggleKey }) {
+function CustomMediaLegend({ hoveredKey, onHoverKey, visibleKeys, onToggleKey, mediaConfig }) {
+  if (mediaConfig.length <= 1) return null;
+
   return (
     <div className="flex flex-wrap items-center justify-center gap-4 pt-4 px-2">
-      {MEDIA_CONFIG.map((item) => {
+      {mediaConfig.map((item) => {
         const isVisible = visibleKeys.has(item.key);
         const isHovered = hoveredKey === item.key;
 
@@ -187,16 +190,42 @@ function CustomMediaLegend({ hoveredKey, onHoverKey, visibleKeys, onToggleKey })
  * MediaStackedBarChart Component
  * Visualizes media distribution with interactive category filtering,
  * hover highlighting, and rich progress bars in tooltips.
+ * Dynamically adapts between Legacy mode (all media grouped) and Modern mode (granular categories).
  */
-export default function MediaStackedBarChart({ data = [] }) {
+export default function MediaStackedBarChart({ data = [], isLegacy = false }) {
   const [hoveredKey, setHoveredKey] = useState(null);
+
+  const hasSpecificMedia = useMemo(() => {
+    return data.some(
+      (item) => (item.Audio || 0) > 0 || (item.Image || 0) > 0 || (item.Video || 0) > 0 || (item.Sticker || 0) > 0
+    );
+  }, [data]);
+
+  const hasGenericMedia = useMemo(() => {
+    return data.some((item) => (item.Media || 0) > 0);
+  }, [data]);
+
+  const mediaConfig = useMemo(() => {
+    if (isLegacy || !hasSpecificMedia) {
+      return [{ key: 'Media', name: 'Media (Totale)', color: '#10b981' }];
+    }
+    if (hasGenericMedia) {
+      return DEFAULT_MEDIA_CONFIG;
+    }
+    return [
+      { key: 'Audio', name: 'Audio', color: '#10b981' },
+      { key: 'Image', name: 'Images', color: '#0ea5e9' },
+      { key: 'Video', name: 'Videos', color: '#f43f5e' },
+      { key: 'Sticker', name: 'Stickers', color: '#a855f7' }
+    ];
+  }, [isLegacy, hasSpecificMedia, hasGenericMedia]);
+
   const [visibleKeys, setVisibleKeys] = useState(() => new Set(['Audio', 'Image', 'Video', 'Sticker', 'Media']));
 
   const handleToggleKey = (key) => {
     setVisibleKeys((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
-        // Prevent deselecting all categories
         if (next.size > 1) next.delete(key);
       } else {
         next.add(key);
@@ -207,7 +236,7 @@ export default function MediaStackedBarChart({ data = [] }) {
 
   const enrichedData = useMemo(() => {
     return data.map((item) => {
-      const total = MEDIA_CONFIG.reduce((acc, cat) => {
+      const total = mediaConfig.reduce((acc, cat) => {
         return acc + (visibleKeys.has(cat.key) ? (item[cat.key] || 0) : 0);
       }, 0);
       return {
@@ -215,162 +244,93 @@ export default function MediaStackedBarChart({ data = [] }) {
         total
       };
     });
-  }, [data, visibleKeys]);
+  }, [data, visibleKeys, mediaConfig]);
 
-  const activeKeys = MEDIA_CONFIG.map((c) => c.key).filter((k) => visibleKeys.has(k));
+  const activeKeys = mediaConfig.map((c) => c.key).filter((k) => visibleKeys.has(k));
   const topKey = activeKeys[activeKeys.length - 1];
 
   return (
-    <div className="h-80 w-full select-none">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={enrichedData}
-          margin={{ top: 24, right: 16, left: -24, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.4} vertical={false} />
+    <div className="space-y-4">
+      {isLegacy && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-mono p-3 rounded-xl flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+          <span>Formato Legacy: nelle vecchie esportazioni di WhatsApp tutti gli allegati venivano raggruppati genericamente come &quot;Media omessi&quot;.</span>
+        </div>
+      )}
 
-          <XAxis
-            dataKey="name"
-            stroke="#71717a"
-            fontSize={11}
-            fontFamily="var(--font-mono)"
-            tickLine={false}
-            axisLine={false}
-            tick={<TruncatedAxisTick />}
-          />
+      <div className="h-80 w-full select-none">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={enrichedData}
+            margin={{ top: 24, right: 16, left: -24, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" opacity={0.4} vertical={false} />
 
-          <YAxis
-            stroke="#71717a"
-            fontSize={11}
-            fontFamily="var(--font-mono)"
-            tickLine={false}
-            axisLine={false}
-            domain={[0, (dataMax) => Math.max(5, Math.ceil(dataMax * 1.15))]}
-          />
+            <XAxis
+              dataKey="name"
+              stroke="#71717a"
+              fontSize={11}
+              fontFamily="var(--font-mono)"
+              tickLine={false}
+              axisLine={false}
+              tick={<TruncatedAxisTick />}
+            />
 
-          <RechartsTooltip
-            cursor={{ fill: 'rgba(255, 255, 255, 0.04)', rx: 6, ry: 6 }}
-            content={<MediaCustomTooltip visibleKeys={visibleKeys} />}
-          />
+            <YAxis
+              stroke="#71717a"
+              fontSize={11}
+              fontFamily="var(--font-mono)"
+              tickLine={false}
+              axisLine={false}
+              domain={[0, (dataMax) => Math.max(5, Math.ceil(dataMax * 1.15))]}
+            />
 
-          <Legend
-            verticalAlign="bottom"
-            content={
-              <CustomMediaLegend
-                hoveredKey={hoveredKey}
-                onHoverKey={setHoveredKey}
-                visibleKeys={visibleKeys}
-                onToggleKey={handleToggleKey}
-              />
-            }
-          />
+            <RechartsTooltip
+              cursor={{ fill: 'rgba(255, 255, 255, 0.04)', rx: 6, ry: 6 }}
+              content={<MediaCustomTooltip visibleKeys={visibleKeys} mediaConfig={mediaConfig} />}
+            />
 
-          {/* Segment: Audio */}
-          {visibleKeys.has('Audio') && (
-            <Bar
-              dataKey="Audio"
-              name="Audio"
-              stackId="mediaStack"
-              fill="#10b981"
-              opacity={!hoveredKey || hoveredKey === 'Audio' ? 1 : 0.3}
-              radius={topKey === 'Audio' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              isAnimationActive={true}
-            >
-              {topKey === 'Audio' && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  content={<CustomBarTotalLabel />}
+            <Legend
+              verticalAlign="bottom"
+              content={
+                <CustomMediaLegend
+                  hoveredKey={hoveredKey}
+                  onHoverKey={setHoveredKey}
+                  visibleKeys={visibleKeys}
+                  onToggleKey={handleToggleKey}
+                  mediaConfig={mediaConfig}
                 />
-              )}
-            </Bar>
-          )}
+              }
+            />
 
-          {/* Segment: Images */}
-          {visibleKeys.has('Image') && (
-            <Bar
-              dataKey="Image"
-              name="Images"
-              stackId="mediaStack"
-              fill="#0ea5e9"
-              opacity={!hoveredKey || hoveredKey === 'Image' ? 1 : 0.3}
-              radius={topKey === 'Image' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              isAnimationActive={true}
-            >
-              {topKey === 'Image' && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  content={<CustomBarTotalLabel />}
-                />
-              )}
-            </Bar>
-          )}
+            {mediaConfig.map((item) => {
+              if (!visibleKeys.has(item.key)) return null;
+              const isTop = item.key === topKey;
 
-          {/* Segment: Videos */}
-          {visibleKeys.has('Video') && (
-            <Bar
-              dataKey="Video"
-              name="Videos"
-              stackId="mediaStack"
-              fill="#f43f5e"
-              opacity={!hoveredKey || hoveredKey === 'Video' ? 1 : 0.3}
-              radius={topKey === 'Video' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              isAnimationActive={true}
-            >
-              {topKey === 'Video' && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  content={<CustomBarTotalLabel />}
-                />
-              )}
-            </Bar>
-          )}
-
-          {/* Segment: Stickers */}
-          {visibleKeys.has('Sticker') && (
-            <Bar
-              dataKey="Sticker"
-              name="Stickers"
-              stackId="mediaStack"
-              fill="#a855f7"
-              opacity={!hoveredKey || hoveredKey === 'Sticker' ? 1 : 0.3}
-              radius={topKey === 'Sticker' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              isAnimationActive={true}
-            >
-              {topKey === 'Sticker' && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  content={<CustomBarTotalLabel />}
-                />
-              )}
-            </Bar>
-          )}
-
-          {/* Segment: Media */}
-          {visibleKeys.has('Media') && (
-            <Bar
-              dataKey="Media"
-              name="Media"
-              stackId="mediaStack"
-              fill="#f59e0b"
-              opacity={!hoveredKey || hoveredKey === 'Media' ? 1 : 0.3}
-              radius={topKey === 'Media' ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-              isAnimationActive={true}
-            >
-              {topKey === 'Media' && (
-                <LabelList
-                  dataKey="total"
-                  position="top"
-                  content={<CustomBarTotalLabel />}
-                />
-              )}
-            </Bar>
-          )}
-        </BarChart>
-      </ResponsiveContainer>
+              return (
+                <Bar
+                  key={item.key}
+                  dataKey={item.key}
+                  name={item.name}
+                  stackId="mediaStack"
+                  fill={item.color}
+                  opacity={!hoveredKey || hoveredKey === item.key ? 1 : 0.3}
+                  radius={isTop ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  isAnimationActive={true}
+                >
+                  {isTop && (
+                    <LabelList
+                      dataKey="total"
+                      position="top"
+                      content={<CustomBarTotalLabel />}
+                    />
+                  )}
+                </Bar>
+              );
+            })}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

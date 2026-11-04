@@ -111,9 +111,43 @@ export function extractEmojis(text) {
 
 /**
  * Single-pass analytics computation.
- * Walks the messages array once and accumulates all metrics to avoid multiple O(n) passes.
+ * Supports sender filtering (e.g. excluding forwarded message senders) and participant outlier detection.
  */
-export function computeAllAnalytics(messages) {
+export function computeAllAnalytics(messages = [], options = {}) {
+  const { excludedSenders = new Set() } = options;
+
+  // Catalog all raw senders to identify direct chats and forwarded outliers
+  const allSendersMap = {};
+  for (let i = 0; i < messages.length; i++) {
+    const s = messages[i].sender;
+    allSendersMap[s] = (allSendersMap[s] || 0) + 1;
+  }
+
+  const allParticipants = Object.entries(allSendersMap)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  let isDirectChat = false;
+  let suspectedForwardedSenders = [];
+
+  if (allParticipants.length > 2) {
+    const top2Total = allParticipants[0].count + allParticipants[1].count;
+    const top2Share = messages.length > 0 ? top2Total / messages.length : 0;
+    const minShare = messages.length <= 50 ? 0.85 : 0.90;
+    const othersAreSmall = allParticipants.slice(2).every(s => s.count <= 3 || (s.count / messages.length) <= 0.025);
+    if (top2Share >= minShare && othersAreSmall) {
+      isDirectChat = true;
+      suspectedForwardedSenders = allParticipants.slice(2).map(s => s.name);
+    }
+  } else if (allParticipants.length === 2) {
+    isDirectChat = true;
+  }
+
+  // Filter messages if excludedSenders is specified
+  const activeMessages = excludedSenders && excludedSenders.size > 0
+    ? messages.filter(m => !excludedSenders.has(m.sender))
+    : messages;
+
   const senders = new Set();
   const days = new Set();
   const userCounts = {};
@@ -126,8 +160,8 @@ export function computeAllAnalytics(messages) {
   const emojiCounts = {};
   const wordCounts = {};
 
-  for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i];
+  for (let i = 0; i < activeMessages.length; i++) {
+    const msg = activeMessages[i];
     const { sender, date, time, type, isMedia, message } = msg;
 
     senders.add(sender);
@@ -245,11 +279,11 @@ export function computeAllAnalytics(messages) {
 
   const activeDaysCount = days.size;
   const averageMessagesPerDay = activeDaysCount > 0
-    ? Number((messages.length / activeDaysCount).toFixed(1))
+    ? Number((activeMessages.length / activeDaysCount).toFixed(1))
     : 0;
 
   const stats = {
-    totalMessages: messages.length,
+    totalMessages: activeMessages.length,
     totalParticipants: senders.size,
     totalDays: activeDaysCount,
     averageMessagesPerDay,
@@ -258,7 +292,7 @@ export function computeAllAnalytics(messages) {
     maxInactivityGap
   };
 
-  const threshold = messages.length * 0.02;
+  const threshold = activeMessages.length * 0.02;
   let othersCount = 0;
   const filteredUserVolume = [];
 
@@ -298,6 +332,11 @@ export function computeAllAnalytics(messages) {
     hourlyData: hours,
     mediaBreakdown,
     topEmojis,
-    topWords
+    topWords,
+    participantsMeta: {
+      allParticipants,
+      isDirectChat,
+      suspectedForwardedSenders
+    }
   };
 }

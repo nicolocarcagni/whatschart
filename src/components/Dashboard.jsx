@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
   AreaChart, Area
@@ -46,9 +46,34 @@ function HourlyTooltip({ active, payload, label, peakHour, totalMessages }) {
   return null;
 }
 
-export default function Dashboard({ messages, onBack }) {
-  const analytics = useMemo(() => computeAllAnalytics(messages), [messages]);
-  const { stats, userVolume, hourlyData, mediaBreakdown, topEmojis, topWords } = analytics;
+function getFormatLabel(format) {
+  switch (format) {
+    case 'modern_ios':
+      return 'iOS Moderno';
+    case 'modern_android':
+      return 'Android Moderno';
+    case 'legacy_android':
+      return 'Android Legacy';
+    default:
+      return 'Standard';
+  }
+}
+
+export default function Dashboard({ 
+  messages, 
+  onBack, 
+  formatMode = 'auto', 
+  detectedFormat = 'modern_ios', 
+  isLegacy = false, 
+  onModeChange 
+}) {
+  const [excludedSenders, setExcludedSenders] = useState(() => new Set());
+
+  const analytics = useMemo(
+    () => computeAllAnalytics(messages, { excludedSenders }),
+    [messages, excludedSenders]
+  );
+  const { stats, userVolume, hourlyData, mediaBreakdown, topEmojis, topWords, participantsMeta } = analytics;
 
   const maxWordCount = topWords[0]?.count || 1;
   const maxEmojiCount = topEmojis[0]?.count || 1;
@@ -58,6 +83,39 @@ export default function Dashboard({ messages, onBack }) {
     return hourlyData.reduce((max, item) => (item.count > (max?.count || 0) ? item : max), hourlyData[0]);
   }, [hourlyData]);
 
+  const handleToggleParticipant = (senderName) => {
+    setExcludedSenders((prev) => {
+      const next = new Set(prev);
+      if (next.has(senderName)) {
+        next.delete(senderName);
+      } else {
+        // Prevent excluding all participants
+        const activeCount = (participantsMeta?.allParticipants?.length || 0) - next.size;
+        if (activeCount > 1) {
+          next.add(senderName);
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllForwarded = () => {
+    const suspected = participantsMeta?.suspectedForwardedSenders || [];
+    const hasAnyExcluded = suspected.some(s => excludedSenders.has(s));
+
+    setExcludedSenders((prev) => {
+      const next = new Set(prev);
+      if (hasAnyExcluded) {
+        suspected.forEach(s => next.delete(s));
+      } else {
+        suspected.forEach(s => next.add(s));
+      }
+      return next;
+    });
+  };
+
+  const hasAnyForwardedExcluded = (participantsMeta?.suspectedForwardedSenders || []).some(s => excludedSenders.has(s));
+
   return (
     <div className="w-full max-w-7xl mx-auto pb-16 space-y-8">
       {/* Top Header */}
@@ -66,6 +124,8 @@ export default function Dashboard({ messages, onBack }) {
           <div className="flex items-center gap-2 font-mono text-xs text-zinc-400 uppercase tracking-wider mb-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="font-semibold text-emerald-400">Chat Analysis</span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-400">{getFormatLabel(detectedFormat)}</span>
           </div>
           <h2 className="text-3xl font-semibold text-white tracking-tight">Statistics Overview</h2>
           <p className="text-zinc-400 text-sm font-mono mt-2 font-normal">
@@ -73,14 +133,82 @@ export default function Dashboard({ messages, onBack }) {
           </p>
         </div>
 
-        <button 
-          onClick={onBack}
-          className="bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-white px-4 py-2 rounded-xl transition-all duration-200 border border-zinc-800 hover:border-emerald-500/40 font-mono text-xs flex items-center gap-2 cursor-pointer shadow-sm group active:scale-[0.98]"
-        >
-          <RotateCcw className="w-4 h-4 text-zinc-400 group-hover:text-emerald-400 transition-colors" strokeWidth={1.5} />
-          <span className="font-semibold">Upload another file</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Format Mode Switcher */}
+          {onModeChange && (
+            <div className="bg-zinc-900/80 border border-zinc-800 p-1 rounded-xl flex items-center gap-1 font-mono text-xs">
+              <span className="text-zinc-500 text-[11px] px-2 uppercase font-medium select-none">
+                Modalità:
+              </span>
+              <button
+                type="button"
+                onClick={() => onModeChange('auto')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                  formatMode === 'auto'
+                    ? 'bg-emerald-500 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                }`}
+              >
+                Auto
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange('modern')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                  formatMode === 'modern'
+                    ? 'bg-emerald-500 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                }`}
+              >
+                Moderno
+              </button>
+              <button
+                type="button"
+                onClick={() => onModeChange('legacy')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-medium ${
+                  formatMode === 'legacy'
+                    ? 'bg-emerald-500 text-zinc-950 font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/60'
+                }`}
+              >
+                Legacy
+              </button>
+            </div>
+          )}
+
+          <button 
+            onClick={onBack}
+            className="bg-zinc-900/60 hover:bg-zinc-900 text-zinc-300 hover:text-white px-4 py-2 rounded-xl transition-all duration-200 border border-zinc-800 hover:border-emerald-500/40 font-mono text-xs flex items-center gap-2 cursor-pointer shadow-sm group active:scale-[0.98]"
+          >
+            <RotateCcw className="w-4 h-4 text-zinc-400 group-hover:text-emerald-400 transition-colors" strokeWidth={1.5} />
+            <span className="font-semibold">Upload another file</span>
+          </button>
+        </div>
       </div>
+
+      {/* Direct Chat / Forwarded Messages Detection Alert */}
+      {participantsMeta?.isDirectChat && participantsMeta?.suspectedForwardedSenders?.length > 0 && (
+        <div className="bg-zinc-900/60 border border-amber-500/20 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 font-mono text-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg shrink-0">
+              <Users className="w-4 h-4" strokeWidth={1.5} />
+            </div>
+            <div>
+              <span className="text-white font-semibold">Chat tra 2 partecipanti principali</span>
+              <p className="text-zinc-400 mt-0.5 font-normal">
+                Rilevati possibili messaggi inoltrati o citati da: <span className="text-amber-400 font-semibold">{participantsMeta.suspectedForwardedSenders.join(', ')}</span>.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleAllForwarded}
+            className="px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-mono transition-colors shrink-0 cursor-pointer"
+          >
+            {hasAnyForwardedExcluded ? 'Ripristina tutti i partecipanti' : 'Escludi inoltri dai grafici'}
+          </button>
+        </div>
+      )}
 
       {/* Primary KPI Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -423,6 +551,40 @@ export default function Dashboard({ messages, onBack }) {
             </span>
           </div>
 
+          {/* Participant Filter Chips */}
+          {participantsMeta?.allParticipants?.length > 1 && (
+            <div className="mb-4 flex flex-wrap items-center gap-2">
+              <span className="font-mono text-xs text-zinc-500 mr-1 select-none">Filtro:</span>
+              {participantsMeta.allParticipants.map((item) => {
+                const name = typeof item === 'string' ? item : item.name;
+                const isExcluded = excludedSenders.has(name);
+                const isSuspected = participantsMeta.suspectedForwardedSenders?.includes(name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => handleToggleParticipant(name)}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono transition-all cursor-pointer border ${
+                      isExcluded
+                        ? 'bg-zinc-950/60 border-zinc-800 text-zinc-500 line-through opacity-60 hover:opacity-100'
+                        : isSuspected
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300 hover:border-amber-500/50'
+                        : 'bg-zinc-800/60 border-zinc-700/60 text-zinc-200 hover:border-emerald-500/40 hover:text-white'
+                    }`}
+                    title={isExcluded ? `Clicca per includere ${name}` : `Clicca per escludere ${name}`}
+                  >
+                    <span className="max-w-[120px] truncate">{name}</span>
+                    {isSuspected && (
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded font-sans">
+                        Inoltro?
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <MessagesDonutChart data={userVolume} totalMessages={stats.totalMessages} />
         </div>
 
@@ -440,7 +602,7 @@ export default function Dashboard({ messages, onBack }) {
             </span>
           </div>
 
-          <MediaStackedBarChart data={mediaBreakdown} />
+          <MediaStackedBarChart data={mediaBreakdown} isLegacy={isLegacy} />
         </div>
       </div>
     </div>
